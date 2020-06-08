@@ -1,4 +1,4 @@
-function genfolders(mesh,param)
+function genfolders(mesh,folder)
 
 Filename = mesh.file;
 
@@ -12,8 +12,13 @@ if exist(['Matrices/',Filename]) == 0
     system(['mkdir ' command]);
 end
 
-if exist(['Matrices/',Filename,'/',param.idData]) == 0
-    command = ['Matrices/',Filename,'/',param.idData];
+if exist(['Matrices/',Filename,'/',folder.idData(1:folder.splitData)]) == 0
+    command = ['Matrices/',Filename,'/',folder.idData(1:16)];
+    system(['mkdir ' command]);
+end
+
+if exist(['Matrices/',Filename,'/',folder.idData]) == 0
+    command = ['Matrices/',Filename,'/',folder.idData];
     system(['mkdir ' command]);
 end
 

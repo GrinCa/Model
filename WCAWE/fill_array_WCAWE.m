@@ -1,8 +1,9 @@
 function [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,LHScoeffderiv_fun,RHScoeffderiv_fun,param)
 
+% function which automatically fill the array of matrices coeff
 coeff_derivgen_fun = @(freq,theta) cellfun(@(cellfunc) cellfunc(freq,theta),LHScoeffderiv_fun);
 
-% Fill Cell array of linear comb coefficients derivatives
+% Cell which contain array of coeff (LHS and LHS) for each ref point
 LHScoeffderiv = cell(param.nfreqref,param.nthetaref);
 RHSderiv = cell(param.nfreqref,param.nthetaref);
 

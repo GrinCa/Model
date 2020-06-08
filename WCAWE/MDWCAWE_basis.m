@@ -1,17 +1,10 @@
-function Wtrans = MDWCAWE_basis(listLHS,coeff_deriv,RHSderiv,nvecfreq,nvectheta)
-
-
+function BASIS = MDWCAWE_basis(LHS,coeff_deriv,RHSderiv,nvecfreq,nvectheta)
 
 t_0 = cputime;
 
-ndof = size(listLHS{1},1);
-nmatglob = size(listLHS,2);
+ndof = size(LHS{1},1);
+nmatglob = size(LHS,2);
 
-%warning off all
-
-
-% nvecfreq = 5;
-% nvecsig = 5;
 
 Vtilde = cell(nvecfreq,nvectheta);
 V = cell(nvecfreq,nvectheta);
@@ -19,40 +12,19 @@ Vmatrix = cell(1,nvectheta);
 U = cell(1,nvectheta);
 
 
-
-%--------------------------------------------------------------------------
-%Initialisation of random cell matrices
-%--------------------------------------------------------------------------
-
-% ndof = 216;
-% RHSderiv = cell(nvecfreq,nvecsig);
-% Kglob = rand(ndof);
-% Mglob = rand(ndof);
-% listLHS = {Kglob,Mglob};
-% %Aglob = rand(ndof,ndof);
-% nvecfreq = 5;
-% nvecsig = 5;
-% nmatglob = 2;
-% coeff_deriv = rand(2,nvecfreq,nvecsig);
-
 for jj=1:nvectheta
     U{jj}=[];
     for ii=1:nvecfreq
         Vtilde{ii,jj} = zeros(ndof,1);
         V{ii,jj} = zeros(ndof,1);
-%         RHSderiv{ii,jj} = rand(ndof,1);
-%         coeff_deriv(1,ii,jj) = 1;
-%         coeff_deriv(2,ii,jj) = 1;
     end
 end
 
 
 Aglob = sparse(ndof,ndof);
 for kk=1:nmatglob
-    Aglob = Aglob + coeff_deriv(kk,1,1)*listLHS{kk};
+    Aglob = Aglob + coeff_deriv(kk,1,1)*LHS{kk};
 end
-
-% RHSderiv{1,1} = ones(ndof,1);
 
 
 %--------------------------------------------------------------------------
@@ -80,13 +52,13 @@ for jj=1:nvectheta
            for p2=2:(ii-1)
                Aglobderivp = sparse(ndof,ndof);
                for kk=1:nmatglob
-                   Aglobderivp = Aglobderivp + coeff_deriv(kk,p2+1,1)*listLHS{kk};
+                   Aglobderivp = Aglobderivp + coeff_deriv(kk,p2+1,1)*LHS{kk};
                end % k
                PU2 = Pu2(ii,jj,p2,U);
                sumtmp2 = sumtmp2 + Aglobderivp*Vmatrix{jj}(:,1:ii-p2)*PU2(:,ii-p2);
            end % p2
 
-           Aglobderiv1 = coeff_deriv(1,2,1)*listLHS{1} + coeff_deriv(2,2,1)*listLHS{2};
+           Aglobderiv1 = coeff_deriv(1,2,1)*LHS{1} + coeff_deriv(2,2,1)*LHS{2};
            Vtilde{ii,jj} = Aglob\(sumtmp1 - Aglobderiv1*V{ii-1,jj} - sumtmp2);
            [Vtilde, U] = orthogonalise(ii,jj,U,Vtilde,V,nvecfreq);
            U{jj}(ii,ii) = norm(Vtilde{ii,jj});
@@ -96,25 +68,12 @@ for jj=1:nvectheta
    end
 end % j
 
-Wtrans = full(cell2mat(Vmatrix));
+BASIS = full(cell2mat(Vmatrix));
 
 
 t_end_reduc = cputime-t_0;
-outputdisplay = sprintf('[MDWCAWE:INFO] CPUtime for building of WCAWE basis (%d vectors): %.4f s',size(Wtrans,2),t_end_reduc);
+outputdisplay = sprintf('[MDWCAWE:INFO] CPUtime for building of WCAWE basis (%d vectors): %.4f s',size(BASIS,2),t_end_reduc);
 disp(outputdisplay);
-
-
-
-%--------------------------------------------------------------------------
-%Verifs
-%--------------------------------------------------------------------------
-
-for ii=1:size(Wtrans,2)
-    for jj=1:size(Wtrans,2)
-        %disp(sprintf("%d,%d",ii,jj));
-        %disp(Wtrans(:,ii)'*Wtrans(:,ii));
-    end
-end
 
 
 function [Vtilde, U] = orthogonalise(ii,jj,U,Vtilde,V,nvecfreq)
@@ -122,7 +81,7 @@ function [Vtilde, U] = orthogonalise(ii,jj,U,Vtilde,V,nvecfreq)
         if gamma==jj
             h=ii-1;
         else
-            h=nvecfreq;%ii;%h=nvecfreq;
+            h=nvecfreq;
         end
         for ksi=1:h
             U{gamma}(ksi,ii) = V{ksi,gamma}'*Vtilde{ii,jj}; %
@@ -147,7 +106,7 @@ function Pu = Pu2(ii,jj,pp,U)
 end
 
 
-function [Vmatrix] = concatenate(Vmatrix,V,ii,jj)
+function Vmatrix = concatenate(Vmatrix,V,ii,jj)
     Vmatrix{jj} = [Vmatrix{jj} V{ii,jj}];
 end
 

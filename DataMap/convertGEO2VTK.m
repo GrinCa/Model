@@ -1,4 +1,4 @@
-function convertGEO2VTK(FEmatrices,mesh,sizemesh,SOL,param,index)
+function convertGEO2VTK(FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
 
 %##########################################################################
 %Please read the following lines for further informations
@@ -33,12 +33,12 @@ FILENAME = mesh.file;
 connectivity_table = load(['Matrices/',FILENAME,'/connectivity_table.txt']);
 connectivity_table = connectivity_table(:,[1 2 3 4 5 8 6 7 9 10]);
 text_field = get_text_field(FEmatrices.Nodes,connectivity_table,FILENAME);
-convertVTK3(FEmatrices,text_field,SOL,FILENAME,param,index,sizemesh)
+convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
 
 end
 
 
-function convertVTK3(FEmatrices,text_field,SOL,FILENAME,param,index,sizemesh)
+function convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
 % -This function create as much .vtk file as we have frequencies.
 % -text field contains all the text data that every .vtk file needs,
 % and which is the same no matter the frequency considerate. It was
@@ -49,51 +49,30 @@ function convertVTK3(FEmatrices,text_field,SOL,FILENAME,param,index,sizemesh)
 % in memory.
 ndof = size(FEmatrices.Nodes,1);
 
-indexfreq = index{1};
-indextheta = index{2};
+rangefreq = range{1};
+rangetheta = range{2};
 
 
 SOLUTION = real(SOL(:,:,:));
 
-
-for ii=indexfreq
-    for jj=indextheta
-        disp(['***Converting [FREQ,THETA] = [',num2str(param.freq(ii)),',',num2str(180*param.theta(jj)/pi),']***']);
+for ii=rangefreq
+    for jj=rangetheta
+        disp(['*** Converting [FREQ,THETA] = [',num2str(param.freq(ii)),',',num2str(180*param.theta(jj)/pi),'] ***']);
         file_name = strcat('DataMap/',FILENAME,'/',FILENAME,'_sizemesh_',num2str(sizemesh),'_freq_',num2str(param.freq(ii)),'_theta_',num2str(180*param.theta(jj)/pi),'.vtk');
         fileID = fopen(file_name,'wt');
         fprintf(fileID,text_field);
+        
         text_data = [];
-        %%%% Split SOLUTION into each respective domain %%%%
-        Cavity_pressure = zeros(ndof,length(indexfreq),length(indextheta));
-        BG = zeros(ndof,1);
-        Displacement = {zeros(ndof,length(indexfreq),length(indextheta));...
-                        zeros(ndof,length(indexfreq),length(indextheta));...
-                        zeros(ndof,length(indexfreq),length(indextheta));};
-        Cavity_pressure(FEmatrices.cavity_nodes,:,:) = SOLUTION(FEmatrices.indexp,:,:);
-        FEmatrices.RHS_0 = zeros(4*ndof,1);
-        BG(FEmatrices.field) = FEmatrices.RHS_0(FEmatrices.indexfield);
-        Displacement{1}(FEmatrices.plate_nodes,:,:) = SOLUTION(FEmatrices.indexu1,:,:);
-        Displacement{2}(FEmatrices.plate_nodes,:,:) = SOLUTION(FEmatrices.indexu2,:,:);
-        Displacement{3}(FEmatrices.plate_nodes,:,:) = SOLUTION(FEmatrices.indexu3,:,:);
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        text_data = [text_data ['POINT_DATA ' num2str(ndof) '\n']];
-        text_data = [text_data 'SCALARS PRESSURE float 1\n'];
-        text_data = [text_data 'LOOKUP_TABLE default\n'];
-        for kk=1:ndof
-            text_data = [text_data [num2str(real(Cavity_pressure(kk,ii,jj))) '\n']];%Cavity_pressure(jj,ii)
+        text_data = [text_data 'POINT_DATA ' num2str(ndof) '\n'];
+        
+        for n=1:length(PARTITION)
+            if strcmp(PARTITION{n}{1},'scalar')
+                text_data = convert_scalar(FEmatrices,text_data,SOLUTION,{ii,jj},PARTITION{n}{2},PARTITION{n}{3},PARTITION{n}{4});
+            elseif strcmp(PARTITION{n}{1},'vector')
+                text_data = convert_vector(FEmatrices,text_data,SOLUTION,{ii,jj},PARTITION{n}{2},PARTITION{n}{3},PARTITION{n}{4});
+            end
         end
-        text_data = [text_data 'SCALARS BG float 1\n'];
-        text_data = [text_data 'LOOKUP_TABLE default\n'];
-        for kk=1:ndof
-            text_data = [text_data [num2str(real(BG(kk))) '\n']];%Cavity_pressure(jj,ii)
-        end
-        text_data = [text_data 'VECTORS DISPLACEMENT float\n'];
-        %text_data = [text_data 'LOOKUP_TABLE default\n'];
-        for kk=1:ndof
-            text_data = [text_data num2str(Displacement{1}(kk,ii,jj)) ' '...
-                                   num2str(Displacement{2}(kk,ii,jj)) ' '...
-                                   num2str(Displacement{3}(kk,ii,jj)) '\n'];
-        end
+
         fprintf(fileID,text_data);
         fclose(fileID);
     end
@@ -120,7 +99,7 @@ for ii=1:ndof
                               num2str(Nodes(ii,3)),'\n']];
 end
 
-disp('***Initialize conversion 3D***');
+disp('*** Initialize conversion 3D ***');
 text_field = [text_field ['CELLS ',num2str(size(connectivity_table,1)),' ',...
                                    num2str(11*size(connectivity_table,1)),'\n']];
 for ii=1:size(connectivity_table,1)
@@ -129,6 +108,50 @@ end
 text_field = [text_field ['CELL_TYPES ',num2str(size(connectivity_table,1)),'\n']];
 for ii=1:size(connectivity_table,1)
     text_field = [text_field '24\n'];
+end
+
+
+end
+
+function text_data = convert_vector(FEmatrices,text_data,SOLUTION,index,local_nodes,global_nodes,component_name)
+
+ndof = size(FEmatrices.Nodes,1);
+indexfreq = index{1};
+indextheta = index{2};
+
+VECTOR = zeros(ndof,3);
+
+VECTOR(global_nodes,1) = SOLUTION(local_nodes(1,:),indexfreq,indextheta);
+VECTOR(global_nodes,2) = SOLUTION(local_nodes(2,:),indexfreq,indextheta);
+VECTOR(global_nodes,3) = SOLUTION(local_nodes(3,:),indexfreq,indextheta);
+
+text_data = [text_data 'VECTORS ' component_name ' float\n'];
+%text_data = [text_data 'LOOKUP_TABLE default\n'];
+
+for kk=1:ndof
+    text_data = [text_data num2str(VECTOR(kk,1)) ' '...
+                           num2str(VECTOR(kk,2)) ' '...
+                           num2str(VECTOR(kk,3)) '\n'];
+end
+
+
+end
+
+function text_data = convert_scalar(FEmatrices,text_data,SOLUTION,index,local_nodes,global_nodes,component_name)
+
+ndof = size(FEmatrices.Nodes,1);
+indexfreq = index{1};
+indextheta = index{2};
+
+text_data = [text_data 'SCALARS ' component_name ' float 1\n'];
+text_data = [text_data 'LOOKUP_TABLE default\n'];
+
+SCALAR = zeros(ndof,1);
+SCALAR(global_nodes) = SOLUTION(local_nodes,indexfreq,indextheta);
+
+
+for kk=1:ndof
+    text_data = [text_data num2str(SCALAR(kk)) '\n'];
 end
 
 

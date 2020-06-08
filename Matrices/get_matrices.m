@@ -133,7 +133,7 @@ FEmatrices.indexu2 = 2:3:length(tab_plate);
 FEmatrices.indexu3 = 3:3:length(tab_plate);
 FEmatrices.indexp = length(tab_plate)+1:1:(length(tab_plate)+length(tab_cavity));
 
-FEmatrices.indexfield = 3*find(FEmatrices.Nodes(plate_nodes,1)<(1e-10));
+FEmatrices.indexfield = 3*(find(FEmatrices.Nodes(plate_nodes,1)<(1e-10))-1)+1;
 
 
 K = K(tab_plate,tab_plate);

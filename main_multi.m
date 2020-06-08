@@ -39,16 +39,17 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 
 % Input parameters for Matlab calculation
 flag.rerun = 0; % to recalculate FreeFem++ matrices
-flag.recalculated = 0; % allow WCAWE and/or FE recalculation
+flag.recalculated = 1; % allow WCAWE and/or FE recalculation
 flag.calculateFE = 0;  % calculate FE solution
 flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
-flag.calculateWCAWE = 1; % calculate WCAWE solution
+flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.plotcomparison = 0; % plot comparison between FE and WCAWE
 flag.comparisonMULTI = 0;
+flag.show_graph = 0;
 
 flag.converge = 0;
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
 
 flag.getmatrices = 1;
@@ -69,7 +70,8 @@ sizemesh = sizemesh(end);
 % define timing struct to access to time calculation of each method                                                    
 timing.freefem = 0;
 timing.WCAWE = 0;
-timing.computeFE = 0;                                                    
+timing.MDWCAWE = 0;
+timing.FE = 0;                                                    
 
 
 % Material parameters
@@ -80,10 +82,10 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 20;
-param.fmax = 80;
+param.fmin = 50;
+param.fmax = 150;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 6; % 20
+param.freqincr = 10; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -102,7 +104,7 @@ param.direction = [1;0;1];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [35 65];
+param.freqref = [70 105 130];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -113,8 +115,8 @@ param.nthetaref = length(param.thetaref);
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 2;
-param.nvecfreqmax = 2;
+param.nvecfreqmin = 3;
+param.nvecfreqmax = 3;
 param.incrvec = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvec : param.nvecfreqmax;
 
@@ -124,18 +126,21 @@ param.nvecthetamax = 4;
 param.vecthetarange = param.nvecthetamin : param.incrvec : param.nvecthetamax;
 
 %Identificator
-param.idData = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
-                num2str(180*param.theta_range(1)/pi) '_' num2str(180*param.theta_range(2)/pi) ']'];
+folder.idData = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
+                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']/'...
+                '[' num2str(param.nvecfreqmin) '_' num2str(param.nvecthetamin) ']['...
+                replace(num2str(param.freqref),'  ','_') '_' replace(num2str(param.thetaref),'  ','_') ']'];
+folder.splitData = 16;
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definition of the matrices coeffiscients
 coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0*exp(1i*(2*pi*f/param.c0).*(x1.*cos(theta)-x2.*sin(theta)));
+coeff_RHS = @(f,theta,x1,x2) P0/800*exp(1i*(2*pi*f/param.c0).*(x1.*cos(theta)-x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-genfolders(mesh,param);
+genfolders(mesh,folder);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -157,7 +162,11 @@ if flag.getmatrices
     LHS = FEmatrices.LHS;
     nLHS = length(LHS);
     param.idx_out = 1:1:FEmatrices.size_system;
+    % Save data only for FE solution
+    save(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
 end
+
+
 
 
 
@@ -195,11 +204,12 @@ end
 % Calculate reference finite element parametric sweep
 %--------------------------------------------------------------------------
 
-t_0 = cputime;
+
 if flag.calculateFE == 1
    disp('**************************');
    disp('* Compute FE calculation *');
    disp('**************************');
+   t_FE = cputime;
    SOLFE = zeros(FEmatrices.size_system,param.nfreq,param.ntheta); %size ndof,nfreq
    % Parametric loop calculation
    for ii=1:param.nfreq
@@ -217,7 +227,7 @@ if flag.calculateFE == 1
            toc;
        end
    end
-   timing.computeFE = cputime-t_0;
+   timing.FE = cputime-t_FE;
 end
 
 
@@ -246,6 +256,7 @@ for nvecfreq=param.vecfreqrange
         disp('****************************************');
         disp('* Compute calculation of MDWCAWE basis *');
         disp('****************************************');
+        t_MDWCAWE = cputime;
         MDWCAWE = [];
         for n=1:param.nfreqref
             for m=1:param.nthetaref
@@ -262,6 +273,7 @@ for nvecfreq=param.vecfreqrange
         disp('**** Compute MDWCAWE projection ****');
         SOLMDWCAWE = Solve_MDWCAWE(FEmatrices,MDWCAWEsvd,param);
         disp('**** MDWCAWE projection done ****');
+        timing.MDWCAWE = cputime-t_MDWCAWE;
         end
         %-----------------------------------------------------------------------
         %WCAWE Basis Romain
@@ -270,6 +282,7 @@ for nvecfreq=param.vecfreqrange
             disp('**************************************');
             disp('* Compute calculation of WCAWE basis *');
             disp('**************************************');
+            t_WCAWE = cputime;
             % Setup list of derivative coefficients and RHS derivatives
             WCAWE = [];
             Wtranstmp_order = param.nvecfreq+param.nvectheta-1;
@@ -311,7 +324,7 @@ for nvecfreq=param.vecfreqrange
                         end
                     end % jj
                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-                    WCAWE = [WCAWE WCAWEtmp(:,2:end-1)];
+                    WCAWE = [WCAWE WCAWEtmp];
                 end
             end
             [uu,vv,ww] = svd(WCAWE,0);
@@ -323,6 +336,7 @@ for nvecfreq=param.vecfreqrange
             disp('**** Compute WCAWE projection ****');
             SOLWCAWE = Solve_MDWCAWE(FEmatrices,WCAWEsvd,param);
             disp('**** WCAWE projection done ****');
+            timing.WCAWE = cputime-t_WCAWE;
         end
         
         %--------------------------------------------------------------------------
@@ -330,19 +344,19 @@ for nvecfreq=param.vecfreqrange
         %--------------------------------------------------------------------------
         % FE solution
         if flag.calculateFE
-            save(['Matrices/',mesh.file,'/',param.idData,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat'],'SOLFE');
+            save(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat'],'SOLFE');
         end
         if flag.calculateMDWCAWE
-            id_sample = ['nvec_[',num2str(param.n_sub_range_freq*nvecfreq),'_',num2str(param.n_sub_range_theta*nvectheta),']_sizemesh_',num2str(sizemesh)];
-            save(['Matrices/',mesh.file,'/',param.idData,'/SOLMDWCAWE_',id_sample,'.mat'],'SOLMDWCAWE');
+            id_sample = ['_sizemesh_',num2str(sizemesh)];
+            save(['Matrices/',mesh.file,'/',folder.idData,'/SOLMDWCAWE',id_sample,'.mat'],'SOLMDWCAWE');
         end
         if flag.calculateWCAWE
-            id_sample = ['nvec_[',num2str(param.n_sub_range_freq*nvecfreq),'_',num2str(param.n_sub_range_theta*nvectheta),']_sizemesh_',num2str(sizemesh)];
-            save(['Matrices/',mesh.file,'/',param.idData,'/SOLWCAWE_',id_sample,'.mat'],'SOLWCAWE');
+            id_sample = ['_sizemesh_',num2str(sizemesh)];
+            save(['Matrices/',mesh.file,'/',folder.idData,'/SOLWCAWE',id_sample,'.mat'],'SOLWCAWE');
         end
         % save FEmatrices which contains all the data of the simulation for
         % each mesh
-        save(['Matrices/',mesh.file,'/',param.idData,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param');
+        save(['Matrices/',mesh.file,'/',folder.idData,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
 
     end
 end
@@ -353,7 +367,9 @@ end
 % Post processing
 %--------------------------------------------------------------------------
 
-show_graph('compare_results',mesh,param);
+if flag.show_graph
+    show_graph('compare_results',mesh,param,folder);
+end
 
 if flag.converge
     clear FEmatrices SOLFE SOLMDWCAWE;
@@ -421,17 +437,39 @@ if flag.convert2VTK
     clear FEmatrices;
     sizemesh_ARRAY = load('sizemesh.txt');
     sizemesh = sizemesh_ARRAY(end);
-    DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
+    DATA = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
     FEmatrices = DATA{1};
     param = DATA{2};
+    %%%
+    PARTITION = cell(2);
+    
+    PARTITION{1} = {'scalar',...
+                    FEmatrices.indexp,...
+                    FEmatrices.cavity_nodes,...
+                    'CAVITY_PRESSURE'};
+    PARTITION{2} = {'vector',...
+                    [FEmatrices.indexu1;...
+                     FEmatrices.indexu2;...
+                     FEmatrices.indexu3],...
+                     FEmatrices.plate_nodes,...
+                     'DISPLACEMENT'};
+    %%%
+    range = {6:1:6, 6:1:6};
+    
     if flag.calculateMDWCAWE
-        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLMDWCAWE_',mesh.file,'_nvec_',num2str(param.n_sub_range*nvecfreq),'_sizemesh_',num2str(sizemesh),'.mat']));
-        SOL = SOLMDWCAWE{1};
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLMDWCAWE,param,{1:1:param.nfreq, 1:1:param.ntheta})
-    elseif flag.calculateFE
-        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLFE_',mesh.file,'_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData,'/SOLMDWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLMDWCAWE = SOLMDWCAWE{1};
+        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLMDWCAWE,PARTITION,param,range);
+    end
+    if flag.calculateWCAWE
+        SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLWCAWE = SOLWCAWE{1};
+        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLWCAWE,PARTITION,param,range);
+    end
+    if flag.calculateFE
+        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,param,{1:1:param.nfreq, 1:1:param.ntheta})
+        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
     end
 end
 
