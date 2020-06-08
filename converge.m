@@ -12,7 +12,7 @@
 
 clear all;
 
-Geofile = 'Plate';
+Geofile = 'Debug';
 
 
 % both arrays stand for size of elastic and acoustic nodes respectively.
