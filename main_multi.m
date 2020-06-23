@@ -8,7 +8,7 @@
 % Init main program
 %--------------------------------------------------------------------------
 
-clear FEmatrices param flag;
+%clear FEmatrices param flag;
 warning('off', 'MATLAB:nearlySingularMatrix');
 
 %--------------------------------------------------------------------------
@@ -38,10 +38,10 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 0; % to recalculate FreeFem++ matrices
+flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation
-flag.calculateFE = 0;  % calculate FE solution
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
+flag.calculateFE = 1;  % calculate FE solution
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.plotcomparison = 0; % plot comparison between FE and WCAWE
@@ -51,6 +51,7 @@ flag.show_graph = 0;
 flag.converge = 0;
 flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
+flag.calculatePrad = 0;
 
 flag.getmatrices = 1;
 
@@ -63,7 +64,7 @@ end
 
 
 % Input files for mesh and FE matrices
-mesh.file = 'Debug';
+mesh.file = 'Model';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 
@@ -82,16 +83,16 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 50;
-param.fmax = 150;
+param.fmin = 200;
+param.fmax = 200;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 10; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
 % Angle range
-param.thetamin = -1;
-param.thetamax = 1;
+param.thetamin = 0;
+param.thetamax = 0;
 param.theta_range = [param.thetamin param.thetamax];
 param.thetaincr = 0.2;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
@@ -104,7 +105,7 @@ param.direction = [1;0;1];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [70 105 130];
+param.freqref = [200];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -126,11 +127,12 @@ param.nvecthetamax = 4;
 param.vecthetarange = param.nvecthetamin : param.incrvec : param.nvecthetamax;
 
 %Identificator
-folder.idData = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
+folder.path1 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
+                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']'];
+folder.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
                 num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']/'...
                 '[' num2str(param.nvecfreqmin) '_' num2str(param.nvecthetamin) ']['...
-                replace(num2str(param.freqref),'  ','_') '_' replace(num2str(param.thetaref),'  ','_') ']'];
-folder.splitData = 16;
+                replace(num2str(param.freqref),' ','_') '][' replace(num2str(param.thetaref),' ','_') ']'];
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definition of the matrices coeffiscients
@@ -154,16 +156,19 @@ param = build_interval(param);
 %--------------------------------------------------------------------------
 if flag.getmatrices
     matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
-                    "H.txt","Q.txt",...
-                    "C.txt"];
-
+                    "Hbg.txt","Qbg.txt",...
+                    "Hcav.txt","Qcav.txt",...
+                    "Hpmlr.txt","Hpmli.txt",...
+                    "Qpmlr.txt","Qpmli.txt",...
+                    "C1.txt","C2.txt"];
+                
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
     Nodes = FEmatrices.Nodes;
     LHS = FEmatrices.LHS;
     nLHS = length(LHS);
     param.idx_out = 1:1:FEmatrices.size_system;
     % Save data only for FE solution
-    save(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
+    save(['Matrices/',mesh.file,'/',folder.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
 end
 
 
@@ -216,13 +221,19 @@ if flag.calculateFE == 1
        for jj=1:param.ntheta
            tic;
            disp(['[FE] [Frequency, Theta] = [',num2str(param.freq(ii)),',',num2str(param.theta(jj)/pi*180),']']);
+           id = initmumps;
+           id = zmumps(id);
+           id.JOB = 6;
            Aglob = sparse(size(LHS{1},1),size(LHS{1},2));
            for kk = 1:nLHS
               Aglob = Aglob + coeff_LHS{kk}(param.freq(ii))*LHS{kk};
            end
-           RHS_0 = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,RHScoeffderiv_fun,[1,1],param.direction);
-           FEmatrices.RHS_0 = RHS_0;
-           resp_P = Aglob\RHS_0; %FEmatrices.RHS;
+           %RHS_0 = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,RHScoeffderiv_fun,[1,1],param.direction);
+           %FEmatrices.RHS_0 = RHS_0;
+           id.RHS = FEmatrices.RHS_BG(:,ii,jj);
+           id = zmumps(id,Aglob);
+           resp_P = id.SOL;
+           id.JOB = -2; id = zmumps(id);%delete the instance of Mumps
            SOLFE(:,ii,jj) = resp_P;
            toc;
        end
@@ -324,7 +335,7 @@ for nvecfreq=param.vecfreqrange
                         end
                     end % jj
                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-                    WCAWE = [WCAWE WCAWEtmp];
+                    WCAWE = [WCAWE WCAWEtmp(:,2:end-1)];
                 end
             end
             [uu,vv,ww] = svd(WCAWE,0);
@@ -338,29 +349,29 @@ for nvecfreq=param.vecfreqrange
             disp('**** WCAWE projection done ****');
             timing.WCAWE = cputime-t_WCAWE;
         end
-        
-        %--------------------------------------------------------------------------
-        % Saves
-        %--------------------------------------------------------------------------
-        % FE solution
-        if flag.calculateFE
-            save(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat'],'SOLFE');
-        end
-        if flag.calculateMDWCAWE
-            id_sample = ['_sizemesh_',num2str(sizemesh)];
-            save(['Matrices/',mesh.file,'/',folder.idData,'/SOLMDWCAWE',id_sample,'.mat'],'SOLMDWCAWE');
-        end
-        if flag.calculateWCAWE
-            id_sample = ['_sizemesh_',num2str(sizemesh)];
-            save(['Matrices/',mesh.file,'/',folder.idData,'/SOLWCAWE',id_sample,'.mat'],'SOLWCAWE');
-        end
-        % save FEmatrices which contains all the data of the simulation for
-        % each mesh
-        save(['Matrices/',mesh.file,'/',folder.idData,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
-
     end
 end
 end
+
+%--------------------------------------------------------------------------
+% Saves
+%--------------------------------------------------------------------------
+% FE solution
+if flag.calculateFE
+    save(['Matrices/',mesh.file,'/',folder.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat'],'SOLFE');
+end
+if flag.calculateMDWCAWE
+    id_sample = ['_sizemesh_',num2str(sizemesh)];
+    save(['Matrices/',mesh.file,'/',folder.path2,'/SOLMDWCAWE',id_sample,'.mat'],'SOLMDWCAWE');
+end
+if flag.calculateWCAWE
+    id_sample = ['_sizemesh_',num2str(sizemesh)];
+    save(['Matrices/',mesh.file,'/',folder.path2,'/SOLWCAWE',id_sample,'.mat'],'SOLWCAWE');
+end
+% save FEmatrices which contains all the data of the simulation for
+% each mesh
+save(['Matrices/',mesh.file,'/',folder.path2,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
+
 end
 
 %--------------------------------------------------------------------------
@@ -429,6 +440,32 @@ if flag.plotMQP
     fclose(fid);
 end
 
+if flag.calculatePrad
+    clear FEmatrices SOLFE SOLWCAWE;
+    sizemeshtmp = load('sizemesh.txt');
+    DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/DATA_sizemesh_',num2str(sizemeshtmp),'.mat']));
+    FEmatrices = DATA{1};
+    param = DATA{2};
+    SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLFE_',mesh.file,'_meshsize_',num2str(sizemesh),'.mat']));
+    SOLFE = SOLFE{1};
+    ndof = size(FEmatrices.Nodes,1);
+    Un = zeros(ndof,param.nfreq,param.ntheta);%Un=U1, indeed, the plate is orthogonal to x unitary vector
+    Un(FEmatrices.plate_nodes,:,:) = SOLFE(FEmatrices.indexu1,:,:);
+    Un_PlateCavity = Un(FEmatrices.PlateCavity_nodes,:,:);
+    Un_PlateBG = Un(FEmatrices.PlateBG_nodes,:,:);
+    Pc = zeros(ndof,param.nfreq,param.ntheta);
+    Pc(FEmatrices.BG_nodes,:,:) = SOLFE(FEmatrices.indexP_BG,:,:);
+    Pc_PlateCavity = Pc(FEmatrices.PlateCavity_nodes,:,:);
+    Pc_PlateBG = Pc(FEmatrices.PlateBG_nodes,:,:);
+    % calculation of the radiated power
+    Pinc = zeros(param.nfreq,param.ntheta,1);
+    Prad = zeros(param.nfreq,param.ntheta,1);
+    Pradtmp = FEmatrices.Radiated*Pc_red;
+    for ii=1:param.nfreq
+        Prad(ii) = 0.5*(1i*param.freq(ii)*Un_red(:,ii))'*Pradtmp(:,ii);
+    end
+end
+
 
 %--------------------------------------------------------------------------
 % convert
@@ -437,38 +474,51 @@ if flag.convert2VTK
     clear FEmatrices;
     sizemesh_ARRAY = load('sizemesh.txt');
     sizemesh = sizemesh_ARRAY(end);
-    DATA = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
+    DATA = struct2cell(load(['Matrices/',mesh.file,'/',folder.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
     FEmatrices = DATA{1};
     param = DATA{2};
     %%%
-    PARTITION = cell(2);
+    PARTITION = cell(5);
     
     PARTITION{1} = {'scalar',...
-                    FEmatrices.indexp,...
+                    FEmatrices.indexP_CAVITY,...
                     FEmatrices.cavity_nodes,...
                     'CAVITY_PRESSURE'};
-    PARTITION{2} = {'vector',...
+    PARTITION{2} = {'scalar',...
+                     FEmatrices.indexP_BG_PML,...
+                     FEmatrices.BG_PML_nodes,...
+                     'SCATTERED_PRESSURE'};
+    PARTITION{3} = {'vector',...
                     [FEmatrices.indexu1;...
                      FEmatrices.indexu2;...
                      FEmatrices.indexu3],...
                      FEmatrices.plate_nodes,...
                      'DISPLACEMENT'};
+    PARTITION{4} = {'data',...
+                     FEmatrices.BG_pressure,...
+                     'BG_PRESSURE'};
+    Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
+    Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
+    PARTITION{5} = {'data',...
+                     Force_vector,...
+                     'FORCE_VECTOR'};
     %%%
-    range = {6:1:6, 6:1:6};
+    range = {1:1:1, 1:1:1};
     
     if flag.calculateMDWCAWE
-        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData,'/SOLMDWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path2,'/SOLMDWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLMDWCAWE = SOLMDWCAWE{1};
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLMDWCAWE,PARTITION,param,range);
     end
     if flag.calculateWCAWE
-        SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path2,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLWCAWE = SOLWCAWE{1};
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLWCAWE,PARTITION,param,range);
     end
     if flag.calculateFE
-        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',folder.idData(1:folder.splitData),'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};
+        
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
     end
 end

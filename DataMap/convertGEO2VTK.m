@@ -70,9 +70,10 @@ for ii=rangefreq
                 text_data = convert_scalar(FEmatrices,text_data,SOLUTION,{ii,jj},PARTITION{n}{2},PARTITION{n}{3},PARTITION{n}{4});
             elseif strcmp(PARTITION{n}{1},'vector')
                 text_data = convert_vector(FEmatrices,text_data,SOLUTION,{ii,jj},PARTITION{n}{2},PARTITION{n}{3},PARTITION{n}{4});
+            elseif strcmp(PARTITION{n}{1},'data')
+                text_data = convert_given_data(FEmatrices,text_data,real(PARTITION{n}{2}(:,ii,jj)),PARTITION{n}{3});
             end
         end
-
         fprintf(fileID,text_data);
         fclose(fileID);
     end
@@ -154,6 +155,19 @@ for kk=1:ndof
     text_data = [text_data num2str(SCALAR(kk)) '\n'];
 end
 
+
+end
+
+function text_data = convert_given_data(FEmatrices,text_data,DATA,component_name)
+
+ndof = size(FEmatrices.Nodes,1);
+
+text_data = [text_data 'SCALARS ' component_name ' float 1\n'];
+text_data = [text_data 'LOOKUP_TABLE default\n'];
+
+for kk=1:ndof
+    text_data = [text_data num2str(DATA(kk)) '\n'];
+end
 
 end
 

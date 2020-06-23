@@ -51,7 +51,6 @@ for ii=1:length(matrix_names)
     fclose(fid);
     matrix_data = importdata(matrix_names(ii)," ",3);
     matrix_data = matrix_data.data;
-    %FEmatrices.listLHS{ii} = sparse(matrix_data(:,1)+1,matrix_data(:,2)+1,matrix_data(:,3));
     listLHS{ii} = sparse([matrix_data(:,1);nrows-1]+1,[matrix_data(:,2);ncolums-1]+1,[matrix_data(:,3);0]);
 end
 
@@ -61,9 +60,9 @@ ndof = size(Nodes,1);
 toc;
 
 % RHS
-RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
-RHSdata = RHSdata.data;
-FEmatrices.RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
+% RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
+% RHSdata = RHSdata.data;
+% FEmatrices.RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
 
 %--------------------------------------------------------------------------
 % return
@@ -71,91 +70,173 @@ FEmatrices.RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
 
 FEmatrices.Nodes = Nodes; 
 FEmatrices = build_global(FEmatrices,listLHS,param,mesh.file);
-FEmatrices.RHS(FEmatrices.size_system) = 0;
-end
+FEmatrices = build_BGField(FEmatrices, param);
 
+end
 
 
 function FEmatrices = build_global(FEmatrices,listLHS,param,FILENAME)
 
-ndof = size(FEmatrices.Nodes,1);
+FEmatrices = Model_pattern(FEmatrices,listLHS,param,FILENAME);
 
-K = listLHS{1}; % Stiffness matrix elastic domain
-M = listLHS{2}; % Mass matrix elastic domain
-H = listLHS{3}; % Stiffness matrix acoustic domain
-Q = listLHS{4}; % Mass matrix acoustic domain
-Ctmp = listLHS{5}; % coupling matrix
-
-
-% label of the different region of the mesh
-region_labels = load(['Matrices/',FILENAME,'/labels.txt']); 
-cavity_label = 1;
-plate_label = 2;
-
-% initialisation arrays of respective nodes
-cavity_nodes = zeros(ndof,1);
-plate_nodes = zeros(ndof,1);
-
-for ii=1:length(region_labels)
-    if region_labels(ii,2) == cavity_label
-        cavity_nodes(region_labels(ii,1)+1) = 1;
-    elseif region_labels(ii,2) == plate_label
-        plate_nodes(region_labels(ii,1)+1) = 1;
-    end
 end
 
-cavity_nodes = find(cavity_nodes);
-plate_nodes = find(plate_nodes);
+
+% this following function build the matrices of the system for the plate
+% case only. For each new case, we have to build a new function, a pattern
+% for partitionning the system.
+function FEmatrices = Model_pattern(FEmatrices,listLHS,param,FILENAME)
+
+ndof = size(FEmatrices.Nodes,1);
+% regions
+cavity_region = 1;
+plate_region = 2;
+background_region = 3;
+PML_region = 4;
+%labels
+PlateCavity_label = 5;
+PlateBG_label = 6;
 
 
+K     = listLHS{1}; % Stiffness matrix elastic domain
+M     = listLHS{2}; % Mass matrix elastic domain
+Hbg   = listLHS{3}; % Stiffness matrix acoustic domain
+Qbg   = listLHS{4}; % Mass matrix acoustic domain
+Hcav  = listLHS{5};
+Qcav  = listLHS{6};
+Hpmlr = listLHS{7};
+Hpmli = listLHS{8};
+Qpmlr = listLHS{9};
+Qpmli = listLHS{10};
+C1tmp = listLHS{11}; % coupling matrix
+C2tmp = listLHS{12};
+
+
+% get the arrays of the nodes belonging to a given region/label
+tab_region = get_regions([cavity_region,plate_region,background_region,PML_region],ndof,FILENAME);
+FEmatrices.cavity_nodes     = find(tab_region(:,1));
+FEmatrices.plate_nodes      = find(tab_region(:,2));
+FEmatrices.BG_nodes         = find(tab_region(:,3));
+FEmatrices.PML_nodes        = find(tab_region(:,4));
+FEmatrices.BG_PML_nodes     = find((tab_region(:,3) + tab_region(:,4)) >= 1);
+
+labels_cell = get_labels([PlateCavity_label,PlateBG_label],...
+                         FILENAME);
+FEmatrices.PlateCavity_nodes    = find(labels_cell{1});
+FEmatrices.PlateBG_nodes        = find(labels_cell{2});
 
 tab_plate = [];
-tab_cavity = cavity_nodes;
-
-for ii=1:length(plate_nodes)
+for ii=1:length(FEmatrices.plate_nodes)
     for jj=1:3
-        tab_plate = [tab_plate 3*(plate_nodes(ii)-1)+jj];
+        tab_plate = [tab_plate 3*(FEmatrices.plate_nodes(ii)-1)+jj];
     end
 end
 
-% save arrays of Nodes, needed for partionning
-FEmatrices.cavity_nodes = cavity_nodes;
-FEmatrices.plate_nodes = plate_nodes;
-FEmatrices.field = find(FEmatrices.Nodes(:,1)<(1e-10));
 
-% plot3(FEmatrices.Nodes(cavity_nodes,1),FEmatrices.Nodes(cavity_nodes,2),FEmatrices.Nodes(cavity_nodes,3),'+');
+%plot3(FEmatrices.Nodes(cavity_nodes,1),FEmatrices.Nodes(cavity_nodes,2),FEmatrices.Nodes(cavity_nodes,3),'+');
 % plot3(FEmatrices.Nodes(plate_nodes,1),FEmatrices.Nodes(plate_nodes,2),FEmatrices.Nodes(plate_nodes,3),'+');
 % plot3(FEmatrices.Nodes(FEmatrices.field,1),FEmatrices.Nodes(FEmatrices.field,2),FEmatrices.Nodes(FEmatrices.field,3),'+');
 
 % indexing of the differents subspaces for partitionning
-FEmatrices.indexu1 = 1:3:length(tab_plate);
-FEmatrices.indexu2 = 2:3:length(tab_plate);
-FEmatrices.indexu3 = 3:3:length(tab_plate);
-FEmatrices.indexp = length(tab_plate)+1:1:(length(tab_plate)+length(tab_cavity));
-
-FEmatrices.indexfield = 3*(find(FEmatrices.Nodes(plate_nodes,1)<(1e-10))-1)+1;
-
+FEmatrices.indexu1        = 1:3:length(tab_plate);
+FEmatrices.indexu2        = 2:3:length(tab_plate);
+FEmatrices.indexu3        = 3:3:length(tab_plate);
+FEmatrices.indexP_BG_PML  = (length(tab_plate)+1) : 1 : (length(tab_plate)+length(FEmatrices.BG_PML_nodes));
+FEmatrices.indexP_CAVITY  = (length(tab_plate)+length(FEmatrices.BG_PML_nodes)+1) : 1 : ...
+                            (length(tab_plate)+length(FEmatrices.BG_PML_nodes)+length(FEmatrices.cavity_nodes));
+FEmatrices.indexP_BG = zeros(length(FEmatrices.BG_nodes),1);
+for ii=1:length(FEmatrices.BG_nodes)
+    FEmatrices.indexP_BG(ii) = length(tab_plate)+find(FEmatrices.BG_PML_nodes==FEmatrices.BG_nodes(ii)); 
+end
 
 K = K(tab_plate,tab_plate);
 M = M(tab_plate,tab_plate);
-H = H(tab_cavity,tab_cavity);
-Q = Q(tab_cavity,tab_cavity);
-C = sparse(size(M,1),size(H,2));
-C(FEmatrices.indexu1,:) = Ctmp(plate_nodes,cavity_nodes);
+FEmatrices.Hbg = Hbg(FEmatrices.BG_nodes,FEmatrices.BG_nodes);%needed for the calculation of the RHS
+FEmatrices.Qbg = Qbg(FEmatrices.BG_nodes,FEmatrices.BG_nodes);%needed for the calculation of the RHS
+Hcav = Hcav(FEmatrices.cavity_nodes,FEmatrices.cavity_nodes);
+Qcav = Qcav(FEmatrices.cavity_nodes,FEmatrices.cavity_nodes);
+Hpmlr = Hpmlr(FEmatrices.BG_PML_nodes,FEmatrices.BG_PML_nodes);
+Hpmli = Hpmli(FEmatrices.BG_PML_nodes,FEmatrices.BG_PML_nodes);
+Hpml = Hpmlr + 1i*Hpmli;
+Qpmlr = Qpmlr(FEmatrices.BG_PML_nodes,FEmatrices.BG_PML_nodes);
+Qpmli = Qpmli(FEmatrices.BG_PML_nodes,FEmatrices.BG_PML_nodes);
+Qpml = Qpmlr + 1i*Qpmli;
+C1 = sparse(size(M,1),size(Hpml,2));
+C2 = sparse(size(M,1),size(Hcav,2));
+C1(FEmatrices.indexu1,:) = C1tmp(FEmatrices.plate_nodes,FEmatrices.BG_PML_nodes);
+C2(FEmatrices.indexu1,:) = C2tmp(FEmatrices.plate_nodes,FEmatrices.cavity_nodes);
 
-Kglob = sparse([K -C;sparse(size(H,1),size(K,2)) H]);
-Mglob = sparse([M sparse(size(C,1),size(C,2));param.rho*C' Q/param.c0^2]);
+Kglob = sparse([K -C1 -C2;...
+                sparse(size(Hpml,1),size(K,2)) Hpml sparse(size(Hpml,1),size(Hcav,2));...
+                sparse(size(Hcav,1),size(K,2)+size(Hpml,2)) Hcav]);
+Mglob = sparse([M sparse(size(M,1),size(Qpml,2)+size(Qcav,2));...
+                param.rho*C1' Qpml/param.c0^2 sparse(size(Qpml,1),size(Qcav,2));...
+                param.rho*C2' sparse(size(Qcav,1),size(Qpml,2)) Qcav/param.c0^2]);
 
 FEmatrices.LHS = {Kglob,Mglob};
 
-% size of the "reduced" system < 4*ndof
-FEmatrices.size_system = size(FEmatrices.LHS{1},1);
+FEmatrices.size_system = size(Kglob,1);
+
 
 end
 
+function FEmatrices = build_BGField(FEmatrices,param)
+ndof = size(FEmatrices.Nodes,1);
+
+% Cell of RHS
+FEmatrices.RHS_BG = zeros(FEmatrices.size_system,param.nfreq,param.ntheta);
+
+%BG_nodes = 1:1:FEmatrices.size_system;
+Field_nodes = FEmatrices.BG_nodes;
+
+xbg = FEmatrices.Nodes(Field_nodes,1);
+ybg = FEmatrices.Nodes(Field_nodes,2);
+
+FEmatrices.BG_pressure = zeros(ndof,length(param.freq),length(param.theta));
+
+P0 = 1;
+
+for ii=1:param.nfreq
+    for jj=1:param.ntheta
+        k = 2*pi*param.freq(ii)/param.c0;
+        BG_Pressure_tmp = P0*exp(-1i*k*(xbg*cos(param.theta(jj))+ybg*sin(param.theta(jj))));%propagation (+x,+y), convention exp(-1i*k*x)
+        FEmatrices.BG_pressure(Field_nodes,ii,jj) = BG_Pressure_tmp;
+        Z = FEmatrices.Hbg - (2*pi*param.freq(ii)/param.c0)^2*FEmatrices.Qbg;
+        U_inc = zeros(FEmatrices.size_system,1);
+        U_inc(FEmatrices.indexP_BG) = -Z*BG_Pressure_tmp;
+        FEmatrices.RHS_BG(:,ii,jj) = U_inc;
+    end
+end
+end
 
 
+function tab_region = get_regions(region_array,ndof,FILENAME)
 
+connectivity_table = load(['Matrices/',FILENAME,'/connectivity_table.txt']);
+region_element = load(['Matrices/',FILENAME,'/regions.txt']);
+
+tab_region = zeros(ndof,length(region_array));
+
+for ii=region_array
+    id_elements = find(region_element == region_array(ii));
+    for jj=1:length(id_elements)
+        tab_region(connectivity_table(id_elements(jj),:)+1,ii) = 1;
+    end
+end
+
+end
+
+function labels_cell = get_labels(label_number,FILENAME)
+
+tab_labels = load(['Matrices/',FILENAME,'/labels.txt']);
+labels_cell = cell(1,length(label_number));
+
+for ii=1:length(label_number)
+    jj = find(tab_labels(1,:) == label_number(ii));
+    labels_cell{ii} = tab_labels(2:end,jj);
+end
+
+end
 
 
 

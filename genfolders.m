@@ -12,13 +12,13 @@ if exist(['Matrices/',Filename]) == 0
     system(['mkdir ' command]);
 end
 
-if exist(['Matrices/',Filename,'/',folder.idData(1:folder.splitData)]) == 0
-    command = ['Matrices/',Filename,'/',folder.idData(1:16)];
+if exist(['Matrices/',Filename,'/',folder.path1]) == 0
+    command = ['Matrices/',Filename,'/',folder.path1];
     system(['mkdir ' command]);
 end
 
-if exist(['Matrices/',Filename,'/',folder.idData]) == 0
-    command = ['Matrices/',Filename,'/',folder.idData];
+if exist(['Matrices/',Filename,'/',folder.path2]) == 0
+    command = ['Matrices/',Filename,'/',folder.path2];
     system(['mkdir ' command]);
 end
 
