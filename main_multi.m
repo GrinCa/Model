@@ -38,24 +38,23 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 1; % to recalculate FreeFem++ matrices
+flag.rerun = 0; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation
-flag.calculateFE = 1;  % calculate FE solution
-flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
+flag.calculateFE = 0;  % calculate FE solution
+flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.plotcomparison = 0; % plot comparison between FE and WCAWE
 flag.comparisonMULTI = 0;
-flag.show_graph = 0;
 
 flag.converge = 0;
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
-flag.calculatePrad = 0;
+flag.calculateTL = 0;
 
 flag.getmatrices = 1;
 
-if flag.converge || flag.plotMQP || flag.convert2VTK
+if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL
     flag.getmatrices = 0;
     flag.rerun = 0;
     flag.recalculated = 0;
@@ -83,16 +82,16 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 200;
+param.fmin = 100;
 param.fmax = 200;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 10; % 20
+param.freqincr = 5; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
 % Angle range
 param.thetamin = 0;
-param.thetamax = 0;
+param.thetamax = 1;
 param.theta_range = [param.thetamin param.thetamax];
 param.thetaincr = 0.2;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
@@ -105,10 +104,10 @@ param.direction = [1;0;1];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [200];
+param.freqref = [135 165];
 param.nfreqref = length(param.freqref);
 
-param.thetaref = [0];
+param.thetaref = [0.5];
 param.nthetaref = length(param.thetaref);
 
 % Input data for the loop over expansion orders. Note that for each
@@ -217,27 +216,30 @@ if flag.calculateFE == 1
    t_FE = cputime;
    SOLFE = zeros(FEmatrices.size_system,param.nfreq,param.ntheta); %size ndof,nfreq
    % Parametric loop calculation
+   id = initmumps;
+   id = zmumps(id);
+   id.JOB = 1;
+   matrix_analysis = coeff_LHS{1}(param.freq(1))*LHS{1} + coeff_LHS{2}(param.freq(1))*LHS{2};
+   id = zmumps(id,matrix_analysis);
    for ii=1:param.nfreq
        for jj=1:param.ntheta
            tic;
            disp(['[FE] [Frequency, Theta] = [',num2str(param.freq(ii)),',',num2str(param.theta(jj)/pi*180),']']);
-           id = initmumps;
-           id = zmumps(id);
-           id.JOB = 6;
            Aglob = sparse(size(LHS{1},1),size(LHS{1},2));
            for kk = 1:nLHS
               Aglob = Aglob + coeff_LHS{kk}(param.freq(ii))*LHS{kk};
            end
            %RHS_0 = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,RHScoeffderiv_fun,[1,1],param.direction);
            %FEmatrices.RHS_0 = RHS_0;
+           id.JOB = 5;
            id.RHS = FEmatrices.RHS_BG(:,ii,jj);
            id = zmumps(id,Aglob);
            resp_P = id.SOL;
-           id.JOB = -2; id = zmumps(id);%delete the instance of Mumps
            SOLFE(:,ii,jj) = resp_P;
            toc;
        end
    end
+   id.JOB = -2; id = zmumps(id);%delete the instance of Mumps
    timing.FE = cputime-t_FE;
 end
 
@@ -370,7 +372,6 @@ if flag.calculateWCAWE
 end
 % save FEmatrices which contains all the data of the simulation for
 % each mesh
-save(['Matrices/',mesh.file,'/',folder.path2,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
 
 end
 
@@ -378,9 +379,6 @@ end
 % Post processing
 %--------------------------------------------------------------------------
 
-if flag.show_graph
-    show_graph('compare_results',mesh,param,folder);
-end
 
 if flag.converge
     clear FEmatrices SOLFE SOLMDWCAWE;
@@ -440,32 +438,6 @@ if flag.plotMQP
     fclose(fid);
 end
 
-if flag.calculatePrad
-    clear FEmatrices SOLFE SOLWCAWE;
-    sizemeshtmp = load('sizemesh.txt');
-    DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/DATA_sizemesh_',num2str(sizemeshtmp),'.mat']));
-    FEmatrices = DATA{1};
-    param = DATA{2};
-    SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLFE_',mesh.file,'_meshsize_',num2str(sizemesh),'.mat']));
-    SOLFE = SOLFE{1};
-    ndof = size(FEmatrices.Nodes,1);
-    Un = zeros(ndof,param.nfreq,param.ntheta);%Un=U1, indeed, the plate is orthogonal to x unitary vector
-    Un(FEmatrices.plate_nodes,:,:) = SOLFE(FEmatrices.indexu1,:,:);
-    Un_PlateCavity = Un(FEmatrices.PlateCavity_nodes,:,:);
-    Un_PlateBG = Un(FEmatrices.PlateBG_nodes,:,:);
-    Pc = zeros(ndof,param.nfreq,param.ntheta);
-    Pc(FEmatrices.BG_nodes,:,:) = SOLFE(FEmatrices.indexP_BG,:,:);
-    Pc_PlateCavity = Pc(FEmatrices.PlateCavity_nodes,:,:);
-    Pc_PlateBG = Pc(FEmatrices.PlateBG_nodes,:,:);
-    % calculation of the radiated power
-    Pinc = zeros(param.nfreq,param.ntheta,1);
-    Prad = zeros(param.nfreq,param.ntheta,1);
-    Pradtmp = FEmatrices.Radiated*Pc_red;
-    for ii=1:param.nfreq
-        Prad(ii) = 0.5*(1i*param.freq(ii)*Un_red(:,ii))'*Pradtmp(:,ii);
-    end
-end
-
 
 %--------------------------------------------------------------------------
 % convert
@@ -478,7 +450,7 @@ if flag.convert2VTK
     FEmatrices = DATA{1};
     param = DATA{2};
     %%%
-    PARTITION = cell(5);
+    PARTITION = cell(4);
     
     PARTITION{1} = {'scalar',...
                     FEmatrices.indexP_CAVITY,...
@@ -497,11 +469,11 @@ if flag.convert2VTK
     PARTITION{4} = {'data',...
                      FEmatrices.BG_pressure,...
                      'BG_PRESSURE'};
-    Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
-    Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
-    PARTITION{5} = {'data',...
-                     Force_vector,...
-                     'FORCE_VECTOR'};
+%     Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
+%     Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
+%     PARTITION{5} = {'data',...
+%                      Force_vector,...
+%                      'FORCE_VECTOR'};
     %%%
     range = {1:1:1, 1:1:1};
     
@@ -523,10 +495,71 @@ if flag.convert2VTK
     end
 end
 
+if flag.calculateTL
+    clear FEmatrices param SOLFE SOLWCAWE SOLMDWCAWE;
+    sizemeshtmp = load('sizemesh.txt');
+    DATA = struct2cell(load(['Matrices/',mesh.file,'/',folder.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
+    FEmatrices = DATA{1};
+    param = DATA{2};
+    try
+        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLFE = SOLFE{1};
+        TL_FE = calculateTL(FEmatrices,SOLFE,param);
+    catch
+        disp("FE solution does not exist for the input parameters, initializing TL to zeros...");
+        TL_FE = zeros(param.nfreq,param.ntheta);
+    end
+    try
+        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path2,'/SOLMDWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLMDWCAWE = SOLMDWCAWE{1};
+        TL_MDWCAWE = calculateTL(FEmatrices,SOLMDWCAWE,param);
+    catch
+        disp("MDWCAWE solution does not exist for the given parameters, initializing TL to zeros...");
+        TL_MDWCAWE = zeros(param.nfreq,param.ntheta);
+    end
+    try
+        SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path2,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
+        SOLWCAWE = SOLWCAWE{1};
+        TL_WCAWE = calculateTL(FEmatrices,SOLWCAWE,param);
+    catch
+        disp("WCAWE solution does not exist for the given parameters, initializing TL to zeros...");
+        TL_WCAWE = zeros(param.nfreq,param.ntheta);
+    end
+    show_graph('plotTL',{TL_FE,TL_MDWCAWE,TL_WCAWE},mesh,param,folder) 
+end
 
 
+function Power = calculatePower(surface_matrix,normal_displacement_surface,pressure_surface,param)
+Power = zeros(param.nfreq,param.ntheta);
+for ii=1:param.nfreq
+    for jj=1:param.ntheta
+        Powertmp = surface_matrix*pressure_surface(:,ii,jj);
+        Vn = 1i*2*pi*param.freq(ii)*normal_displacement_surface(:,ii,jj);
+        Power(ii,jj) = abs(real(0.5*Vn'*Powertmp));
+    end
+end
+end
 
+function TL = calculateTL(FEmatrices,SOL,param)
 
+ndof = size(FEmatrices.Nodes,1);
+Un = zeros(ndof,param.nfreq,param.ntheta);%Un=U1, indeed, the plate is orthogonal to x unitary vector
+Un(FEmatrices.plate_nodes,:,:) = SOL(FEmatrices.indexu1,:,:);
+Un_PlateCavity = Un(FEmatrices.PlateCavity_nodes,:,:);
+Un_PlateBG = Un(FEmatrices.PlateBG_nodes,:,:);
+%Background
+Pc_PlateBG = FEmatrices.BG_pressure(FEmatrices.PlateBG_nodes,:,:);
+%Cavity
+Pc = zeros(ndof,param.nfreq,param.ntheta);
+Pc(FEmatrices.cavity_nodes,:,:) = SOL(FEmatrices.indexP_CAVITY,:,:);
+Pc_PlateCavity = Pc(FEmatrices.PlateCavity_nodes,:,:);
+% calculation of the radiated power
+Pinc = calculatePower(FEmatrices.C1,Un_PlateBG,Pc_PlateBG,param);
+Prad = calculatePower(FEmatrices.C2,Un_PlateCavity,Pc_PlateCavity,param);
+
+TL = 10*log10(Pinc./Prad);
+
+end
 
 
 

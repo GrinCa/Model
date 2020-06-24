@@ -6,7 +6,6 @@ Coordinates = FEmatrices.Nodes(FEmatrices.field,find(direction));
 x1 = Coordinates(:,1);
 x2 = Coordinates(:,2);
 
-
 f = f*ones(size(FEmatrices.field,1),1);
 theta = theta*ones(size(FEmatrices.field,1),1);
 

@@ -36,9 +36,13 @@ end % if
 
 listLHS = cell(1,length(matrix_names)); 
 
-tic;
+
 % Matrices of the FE problem
+tic;
+
 for ii=1:length(matrix_names)
+    nrows = 0;
+    ncolums = 0;
     fid = fopen(matrix_names(ii),'rt');
     for jj=1:3
         line = fgets(fid);
@@ -53,11 +57,12 @@ for ii=1:length(matrix_names)
     matrix_data = matrix_data.data;
     listLHS{ii} = sparse([matrix_data(:,1);nrows-1]+1,[matrix_data(:,2);ncolums-1]+1,[matrix_data(:,3);0]);
 end
-
+toc;
 % Nodes
 Nodes = load(strcat(mesh.file,'/',"Nodes.txt"));
 ndof = size(Nodes,1);
-toc;
+
+
 
 % RHS
 % RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
@@ -165,6 +170,8 @@ C1 = sparse(size(M,1),size(Hpml,2));
 C2 = sparse(size(M,1),size(Hcav,2));
 C1(FEmatrices.indexu1,:) = C1tmp(FEmatrices.plate_nodes,FEmatrices.BG_PML_nodes);
 C2(FEmatrices.indexu1,:) = C2tmp(FEmatrices.plate_nodes,FEmatrices.cavity_nodes);
+FEmatrices.C1 = C1tmp(FEmatrices.PlateBG_nodes, FEmatrices.PlateBG_nodes);
+FEmatrices.C2 = C2tmp(FEmatrices.PlateCavity_nodes, FEmatrices.PlateCavity_nodes);
 
 Kglob = sparse([K -C1 -C2;...
                 sparse(size(Hpml,1),size(K,2)) Hpml sparse(size(Hpml,1),size(Hcav,2));...
@@ -177,7 +184,10 @@ FEmatrices.LHS = {Kglob,Mglob};
 
 FEmatrices.size_system = size(Kglob,1);
 
-
+% FEmatrices.indexfield is the index of the nodes (of the RHS vector)  where is applied the BG
+% pressure field
+FEmatrices.field = FEmatrices.BG_nodes;
+FEmatrices.indexfield = FEmatrices.indexP_BG;
 end
 
 function FEmatrices = build_BGField(FEmatrices,param)
@@ -192,7 +202,7 @@ Field_nodes = FEmatrices.BG_nodes;
 xbg = FEmatrices.Nodes(Field_nodes,1);
 ybg = FEmatrices.Nodes(Field_nodes,2);
 
-FEmatrices.BG_pressure = zeros(ndof,length(param.freq),length(param.theta));
+FEmatrices.BG_pressure = zeros(ndof,param.nfreq,param.ntheta);
 
 P0 = 1;
 
