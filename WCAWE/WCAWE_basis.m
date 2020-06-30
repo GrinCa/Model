@@ -47,6 +47,12 @@ for kk=1:nmat
     Aglob = Aglob+coeff_deriv(kk,1,1)*FEmatrices.LHS{kk};
 end
 
+%initialization of Mumps instance
+id=initmumps();
+id=zmumps(id);
+id.JOB=4;
+id=zmumps(id,Aglob);
+
 Wtrans = [];
 
 for kk=1:nbasevec
@@ -78,8 +84,10 @@ for kk=1:nbasevec
     end % jj
    
     % Modified Gram-Schmidt
-    % id = zmumps(id,Aglob);  
-    Wtrans(:,kk) = Aglob\RHS;%id.SOL;
+    id.RHS = RHS;
+    id.JOB = 3;
+    id = zmumps(id,Aglob);
+    Wtrans(:,kk) = id.SOL;
     for jj=1:kk-1
         Ucoeff(jj,kk) = Wtrans(:,jj)'*Wtrans(:,kk);
         Wtrans(:,kk) = Wtrans(:,kk)-Ucoeff(jj,kk)*Wtrans(:,jj);
@@ -88,6 +96,8 @@ for kk=1:nbasevec
     Wtrans(:,kk) = Wtrans(:,kk)/Ucoeff(kk,kk);
 end % kk
 
+id.JOB = -2;
+id = zmumps(id,Aglob);
 
 t_end_reduc = cputime-t_0;
 outputdisplay = sprintf('[WCAWE:INFO] CPUtime for building of WCAWE basis (%d vectors): %.4f s',nbasevec,t_end_reduc);

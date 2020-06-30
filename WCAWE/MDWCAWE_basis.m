@@ -20,11 +20,16 @@ for jj=1:nvectheta
     end
 end
 
-
 Aglob = sparse(ndof,ndof);
 for kk=1:nmatglob
     Aglob = Aglob + coeff_deriv(kk,1,1)*LHS{kk};
 end
+
+%initialization of Mumps instance
+id=initmumps();
+id=zmumps(id);
+id.JOB=4;
+id=zmumps(id,Aglob);
 
 
 %--------------------------------------------------------------------------
@@ -34,7 +39,10 @@ end
 
 for jj=1:nvectheta
    if norm(RHSderiv(:,1,jj)) ~= 0
-       Vtilde{1,jj} = Aglob\RHSderiv(:,1,jj);
+       id.RHS = RHSderiv(:,1,jj);
+       id.JOB = 3;
+       id = zmumps(id,Aglob);
+       Vtilde{1,jj} = id.SOL;
        if jj~=1
            [Vtilde, U] = orthogonalise(1,jj,U,Vtilde,V,nvecfreq);
        end
@@ -59,7 +67,10 @@ for jj=1:nvectheta
            end % p2
 
            Aglobderiv1 = coeff_deriv(1,2,1)*LHS{1} + coeff_deriv(2,2,1)*LHS{2};
-           Vtilde{ii,jj} = Aglob\(sumtmp1 - Aglobderiv1*V{ii-1,jj} - sumtmp2);
+           id.RHS = (sumtmp1 - Aglobderiv1*V{ii-1,jj} - sumtmp2);
+           id.JOB = 3;
+           id = zmumps(id,Aglob);
+           Vtilde{ii,jj} = id.SOL;
            [Vtilde, U] = orthogonalise(ii,jj,U,Vtilde,V,nvecfreq);
            U{jj}(ii,ii) = norm(Vtilde{ii,jj});
            V{ii,jj} = Vtilde{ii,jj}/U{jj}(ii,ii);
@@ -67,6 +78,9 @@ for jj=1:nvectheta
        end % i
    end
 end % j
+% delete Mumps instance
+id.JOB = -2;
+id = zmumps(id,Aglob);
 
 BASIS = full(cell2mat(Vmatrix));
 

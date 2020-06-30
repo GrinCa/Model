@@ -1,15 +1,17 @@
-function RHS = build_RHS(f,theta,FEmatrices,RHScoeffderiv,derivative_order,direction)
+function RHS = build_RHS(f,theta,FEmatrices,derivative_order,param)
 
-RHS_function = RHScoeffderiv{1,derivative_order(1),derivative_order(2)};
+RHS_function = FEmatrices.RHScoeffderiv_fun{1,derivative_order(1),derivative_order(2)};
 
-Coordinates = FEmatrices.Nodes(FEmatrices.field,find(direction));
+
+Coordinates = FEmatrices.Nodes(FEmatrices.field,find(param.direction));
 x1 = Coordinates(:,1);
 x2 = Coordinates(:,2);
 
-f = f*ones(size(FEmatrices.field,1),1);
-theta = theta*ones(size(FEmatrices.field,1),1);
+f_array = f*ones(size(FEmatrices.field,1),1);
+theta_array = theta*ones(size(FEmatrices.field,1),1);
 
 RHS = zeros(FEmatrices.size_system,1);
-RHS(FEmatrices.indexfield) = RHS_function(f,theta,x1,x2);
-
+Z = FEmatrices.Hbg - (2*pi*f/param.c0)^2*FEmatrices.Qbg;
+RHS(FEmatrices.indexfield) = -Z*RHS_function(f_array,theta_array,x1,x2);
+RHS(FEmatrices.indexP_BGPML) = 0;
 end

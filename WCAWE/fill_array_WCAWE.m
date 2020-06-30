@@ -1,7 +1,7 @@
-function [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,LHScoeffderiv_fun,RHScoeffderiv_fun,param)
+function [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,param)
 
 % function which automatically fill the array of matrices coeff
-coeff_derivgen_fun = @(freq,theta) cellfun(@(cellfunc) cellfunc(freq,theta),LHScoeffderiv_fun);
+coeff_derivgen_fun = @(freq,theta) cellfun(@(cellfunc) cellfunc(freq,theta),FEmatrices.LHScoeffderiv_fun);
 
 % Cell which contain array of coeff (LHS and LHS) for each ref point
 LHScoeffderiv = cell(param.nfreqref,param.nthetaref);
@@ -21,7 +21,7 @@ for n=1:param.nfreqref
         RHS_tmp = zeros(FEmatrices.size_system,param.nvecfreq,param.nvectheta);
         for ii=1:param.nvecfreq
             for jj=1:param.nvectheta
-                RHS_tmp(:,ii,jj) = build_RHS(param.freqref(n),param.thetaref(m),FEmatrices,RHScoeffderiv_fun,[ii,jj],param.direction);
+                RHS_tmp(:,ii,jj) = build_RHS(param.freqref(n),param.thetaref(m),FEmatrices,[ii,jj],param);
             end
         end
         RHSderiv{n,m} = RHS_tmp;

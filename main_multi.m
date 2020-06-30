@@ -38,10 +38,10 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 0; % to recalculate FreeFem++ matrices
+flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation
-flag.calculateFE = 0;  % calculate FE solution
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
+flag.calculateFE = 1;  % calculate FE solution
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.plotcomparison = 0; % plot comparison between FE and WCAWE
@@ -50,7 +50,7 @@ flag.comparisonMULTI = 0;
 flag.converge = 0;
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
-flag.calculateTL = 0;
+flag.calculateTL = 1;
 
 flag.getmatrices = 1;
 
@@ -82,32 +82,32 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 100;
-param.fmax = 200;
+param.fmin = 300;
+param.fmax = 300;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 5; % 20
+param.freqincr = 10; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
 % Angle range
-param.thetamin = 0;
-param.thetamax = 1;
+param.thetamin = -0.5;
+param.thetamax = 0.5;
 param.theta_range = [param.thetamin param.thetamax];
-param.thetaincr = 0.2;
+param.thetaincr = 0.1;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
 param.ntheta = length(param.theta);
 
 P0 = 1;
-param.direction = [1;0;1];
+param.direction = [1;1;0];
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [135 165];
+param.freqref = [300];
 param.nfreqref = length(param.freqref);
 
-param.thetaref = [0.5];
+param.thetaref = [0];
 param.nthetaref = length(param.thetaref);
 
 % Input data for the loop over expansion orders. Note that for each
@@ -115,14 +115,14 @@ param.nthetaref = length(param.thetaref);
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 3;
-param.nvecfreqmax = 3;
+param.nvecfreqmin = 10;
+param.nvecfreqmax = 10;
 param.incrvec = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvec : param.nvecfreqmax;
 
 
-param.nvecthetamin = 4;
-param.nvecthetamax = 4;
+param.nvecthetamin = 10;
+param.nvecthetamax = 10;
 param.vecthetarange = param.nvecthetamin : param.incrvec : param.nvecthetamax;
 
 %Identificator
@@ -136,7 +136,7 @@ folder.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definition of the matrices coeffiscients
 coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0/800*exp(1i*(2*pi*f/param.c0).*(x1.*cos(theta)-x2.*sin(theta)));
+coeff_RHS = @(f,theta,x1,x2) P0*exp(1i*(2*pi*f/param.c0).*(x1.*cos(theta)+x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
@@ -260,7 +260,7 @@ for nvecfreq=param.vecfreqrange
         [LHScoeffderiv_fun,RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
         FEmatrices.LHScoeffderiv_fun = LHScoeffderiv_fun;
         FEmatrices.RHScoeffderiv_fun = RHScoeffderiv_fun;
-        [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,LHScoeffderiv_fun,RHScoeffderiv_fun,param);
+        [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,param);
         
         if flag.calculateMDWCAWE
         %-----------------------------------------------------------------------
@@ -281,7 +281,7 @@ for nvecfreq=param.vecfreqrange
         iiselect = find(diag(vv)>vv(1,1)*1e-15);
         MDWCAWEsvd = uu(:,iiselect);
         nsvd = size(MDWCAWEsvd,2);
-        output = sprintf("[SVD:INFO [MDWCAWE]] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
+        output = sprintf("[MDWCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
         disp(output);
         disp('**** Compute MDWCAWE projection ****');
         SOLMDWCAWE = Solve_MDWCAWE(FEmatrices,MDWCAWEsvd,param);
@@ -344,7 +344,7 @@ for nvecfreq=param.vecfreqrange
             iiselect = find(diag(vv)>vv(1,1)*1e-15);
             WCAWEsvd = uu(:,iiselect);
             nsvd = size(WCAWEsvd,2);
-            output = sprintf("[SVD:INFO [WCAWE]] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
+            output = sprintf("[WCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(WCAWE,2));
             disp(output);
             disp('**** Compute WCAWE projection ****');
             SOLWCAWE = Solve_MDWCAWE(FEmatrices,WCAWEsvd,param);
@@ -450,7 +450,7 @@ if flag.convert2VTK
     FEmatrices = DATA{1};
     param = DATA{2};
     %%%
-    PARTITION = cell(4);
+    PARTITION = cell(5);
     
     PARTITION{1} = {'scalar',...
                     FEmatrices.indexP_CAVITY,...
@@ -469,6 +469,8 @@ if flag.convert2VTK
     PARTITION{4} = {'data',...
                      FEmatrices.BG_pressure,...
                      'BG_PRESSURE'};
+    
+                              
 %     Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
 %     Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
 %     PARTITION{5} = {'data',...
@@ -490,6 +492,9 @@ if flag.convert2VTK
     if flag.calculateFE
         SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};
+        PARTITION{5} = {'data',...
+                        getTotalPressure(FEmatrices,SOLFE,param),...
+                        'Total_pressure'};
         
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
     end
@@ -506,7 +511,7 @@ if flag.calculateTL
         SOLFE = SOLFE{1};
         TL_FE = calculateTL(FEmatrices,SOLFE,param);
     catch
-        disp("FE solution does not exist for the input parameters, initializing TL to zeros...");
+        disp("SOLFE not find for the given parameters");
         TL_FE = zeros(param.nfreq,param.ntheta);
     end
     try
@@ -514,18 +519,19 @@ if flag.calculateTL
         SOLMDWCAWE = SOLMDWCAWE{1};
         TL_MDWCAWE = calculateTL(FEmatrices,SOLMDWCAWE,param);
     catch
-        disp("MDWCAWE solution does not exist for the given parameters, initializing TL to zeros...");
+        disp("SOLMDWCAWE not find for the given parameters");
         TL_MDWCAWE = zeros(param.nfreq,param.ntheta);
     end
     try
         SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',folder.path2,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLWCAWE = SOLWCAWE{1};
-        TL_WCAWE = calculateTL(FEmatrices,SOLWCAWE,param);
+        TL_WCAWE = calculateTL(FEmatrices,SOLMDWCAWE,param);
     catch
-        disp("WCAWE solution does not exist for the given parameters, initializing TL to zeros...");
+        disp("SOLWCAWE not find for the given parameters");
         TL_WCAWE = zeros(param.nfreq,param.ntheta);
     end
-    show_graph('plotTL',{TL_FE,TL_MDWCAWE,TL_WCAWE},mesh,param,folder) 
+
+    show_graph('plotTL',{TL_FE,TL_MDWCAWE,TL_WCAWE},mesh,param,folder)
 end
 
 
@@ -533,34 +539,49 @@ function Power = calculatePower(surface_matrix,normal_displacement_surface,press
 Power = zeros(param.nfreq,param.ntheta);
 for ii=1:param.nfreq
     for jj=1:param.ntheta
-        Powertmp = surface_matrix*pressure_surface(:,ii,jj);
+        Powertmp = abs(surface_matrix)*pressure_surface(:,ii,jj);
         Vn = 1i*2*pi*param.freq(ii)*normal_displacement_surface(:,ii,jj);
-        Power(ii,jj) = abs(real(0.5*Vn'*Powertmp));
+        Power(ii,jj) = 0.5*Vn'*Powertmp;
     end
 end
 end
 
-function TL = calculateTL(FEmatrices,SOL,param)
+function TL = calculateTL(FEmatrices,SOLUTION,param)
 
 ndof = size(FEmatrices.Nodes,1);
 Un = zeros(ndof,param.nfreq,param.ntheta);%Un=U1, indeed, the plate is orthogonal to x unitary vector
-Un(FEmatrices.plate_nodes,:,:) = SOL(FEmatrices.indexu1,:,:);
+Un(FEmatrices.plate_nodes,:,:) = SOLUTION(FEmatrices.indexu1,:,:);
 Un_PlateCavity = Un(FEmatrices.PlateCavity_nodes,:,:);
 Un_PlateBG = Un(FEmatrices.PlateBG_nodes,:,:);
 %Background
 Pc_PlateBG = FEmatrices.BG_pressure(FEmatrices.PlateBG_nodes,:,:);
 %Cavity
 Pc = zeros(ndof,param.nfreq,param.ntheta);
-Pc(FEmatrices.cavity_nodes,:,:) = SOL(FEmatrices.indexP_CAVITY,:,:);
+Pc(FEmatrices.cavity_nodes,:,:) = SOLUTION(FEmatrices.indexP_CAVITY,:,:);
 Pc_PlateCavity = Pc(FEmatrices.PlateCavity_nodes,:,:);
 % calculation of the radiated power
 Pinc = calculatePower(FEmatrices.C1,Un_PlateBG,Pc_PlateBG,param);
 Prad = calculatePower(FEmatrices.C2,Un_PlateCavity,Pc_PlateCavity,param);
 
-TL = 10*log10(Pinc./Prad);
+TL = 10*log10(abs(real(Pinc))./abs(real(Prad)));
 
 end
 
+
+function p_t = getTotalPressure(FEmatrices,SOL,param)
+
+ndof = size(FEmatrices.Nodes,1);
+p_t = zeros(ndof,param.nfreq,param.ntheta);
+Scattered_pressure = zeros(ndof,param.nfreq,param.ntheta);
+Scattered_pressure(FEmatrices.BG_PML_nodes,:,:) = SOL(FEmatrices.indexP_BG_PML,:,:);
+for ii=1:param.nfreq
+    for jj=1:param.ntheta
+        p_t(:,ii,jj) = FEmatrices.BG_pressure(:,ii,jj) + Scattered_pressure(:,ii,jj);
+    end
+end
+
+
+end
 
 
 

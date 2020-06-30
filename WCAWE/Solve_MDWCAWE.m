@@ -23,7 +23,7 @@ for ii=1:param.nfreq
          Aglob_red = Aglob_red + FEmatrices.LHScoeffderiv_fun{kk,1,1}(param.freq(ii),param.theta(jj))*LHS_red{kk};
       end %kk
       %%% Calculation of RHS @ (f,theta) %%%
-      RHS = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,FEmatrices.RHScoeffderiv_fun,[1,1],param.direction);
+      RHS = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
       RHS = sparse(MDWCAWE'*RHS(:));
       solp = Aglob_red\RHS;
       resp_P = MDWCAWE*solp;

@@ -101,6 +101,7 @@ PML_region = 4;
 %labels
 PlateCavity_label = 5;
 PlateBG_label = 6;
+BGPML_label = 8;
 
 
 K     = listLHS{1}; % Stiffness matrix elastic domain
@@ -125,10 +126,11 @@ FEmatrices.BG_nodes         = find(tab_region(:,3));
 FEmatrices.PML_nodes        = find(tab_region(:,4));
 FEmatrices.BG_PML_nodes     = find((tab_region(:,3) + tab_region(:,4)) >= 1);
 
-labels_cell = get_labels([PlateCavity_label,PlateBG_label],...
+labels_cell = get_labels([PlateCavity_label,PlateBG_label,BGPML_label],...
                          FILENAME);
 FEmatrices.PlateCavity_nodes    = find(labels_cell{1});
 FEmatrices.PlateBG_nodes        = find(labels_cell{2});
+FEmatrices.BGPML_nodes          = find(labels_cell{3});
 
 tab_plate = [];
 for ii=1:length(FEmatrices.plate_nodes)
@@ -153,6 +155,11 @@ FEmatrices.indexP_BG = zeros(length(FEmatrices.BG_nodes),1);
 for ii=1:length(FEmatrices.BG_nodes)
     FEmatrices.indexP_BG(ii) = length(tab_plate)+find(FEmatrices.BG_PML_nodes==FEmatrices.BG_nodes(ii)); 
 end
+
+for ii=1:length(FEmatrices.BGPML_nodes)
+    FEmatrices.indexP_BGPML(ii) = length(tab_plate)+find(FEmatrices.BG_PML_nodes==FEmatrices.BGPML_nodes(ii)); 
+end
+
 
 K = K(tab_plate,tab_plate);
 M = M(tab_plate,tab_plate);
@@ -197,7 +204,7 @@ ndof = size(FEmatrices.Nodes,1);
 FEmatrices.RHS_BG = zeros(FEmatrices.size_system,param.nfreq,param.ntheta);
 
 %BG_nodes = 1:1:FEmatrices.size_system;
-Field_nodes = FEmatrices.BG_nodes;
+Field_nodes = FEmatrices.field;
 
 xbg = FEmatrices.Nodes(Field_nodes,1);
 ybg = FEmatrices.Nodes(Field_nodes,2);
@@ -209,11 +216,12 @@ P0 = 1;
 for ii=1:param.nfreq
     for jj=1:param.ntheta
         k = 2*pi*param.freq(ii)/param.c0;
-        BG_Pressure_tmp = P0*exp(-1i*k*(xbg*cos(param.theta(jj))+ybg*sin(param.theta(jj))));%propagation (+x,+y), convention exp(-1i*k*x)
+        BG_Pressure_tmp = P0*exp(1i*k*(xbg*cos(param.theta(jj))+ybg*sin(param.theta(jj))));%propagation (+x,+y), convention exp(-1i*k*x)
         FEmatrices.BG_pressure(Field_nodes,ii,jj) = BG_Pressure_tmp;
         Z = FEmatrices.Hbg - (2*pi*param.freq(ii)/param.c0)^2*FEmatrices.Qbg;
         U_inc = zeros(FEmatrices.size_system,1);
-        U_inc(FEmatrices.indexP_BG) = -Z*BG_Pressure_tmp;
+        U_inc(FEmatrices.indexfield) = -Z*BG_Pressure_tmp;
+        U_inc(FEmatrices.indexP_BGPML) = 0;
         FEmatrices.RHS_BG(:,ii,jj) = U_inc;
     end
 end
