@@ -1,25 +1,30 @@
-function genfolders(mesh,folder)
-
+function param = genfolders(mesh,param)
 Filename = mesh.file;
 
 %--------------------------------------------------------------------------
 % Matrices
 %--------------------------------------------------------------------------
 
+path1 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']',...
+         '[' num2str(int16(180/pi*param.theta_range(1))) '_' num2str(int16(180/pi*param.theta_range(2))) ']'];
 
-if exist(['Matrices/',Filename]) == 0
-    command = ['Matrices/',Filename];
-    system(['mkdir ' command]);
+if exist(['Matrices/',Filename],'dir') == 0
+    path = ['Matrices/',Filename];
+    mkdir(path);
 end
 
-if exist(['Matrices/',Filename,'/',folder.path1]) == 0
-    command = ['Matrices/',Filename,'/',folder.path1];
-    system(['mkdir ' command]);
+if exist(['Matrices/',Filename,'/',path1],'dir') == 0
+    path = ['Matrices/',Filename,'/',path1];
+    mkdir(path);
 end
 
-if exist(['Matrices/',Filename,'/',folder.path2]) == 0
-    command = ['Matrices/',Filename,'/',folder.path2];
-    system(['mkdir ' command]);
+for ii=1:length(param.vecfreqrange)
+    for jj=1:length(param.vecthetarange)
+        if exist(['Matrices/',Filename,'/',path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_') ']/[',num2str(param.vecfreqrange(ii)),'_',num2str(param.vecthetarange(jj)),']'],'dir') == 0
+            path = ['Matrices/',Filename,'/',path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_') ']/[',num2str(param.vecfreqrange(ii)),'_',num2str(param.vecthetarange(jj)),']'];
+            mkdir(path);
+        end
+    end
 end
 
 %--------------------------------------------------------------------------
@@ -41,5 +46,33 @@ if exist(['DataMap/',Filename]) == 0
     command = ['DataMap/',Filename];
     system(['mkdir ' command]);
 end
+
+param.interval_detail_str = '';
+
+for n=1:2 % frequency + angle
+    for ii=1:length(param.interval_construct{n})
+        if length(param.interval_construct{n}{ii}) == 1 % loop on frequency/angle sub interval
+            param.interval_detail_str = strcat(param.interval_detail_str,['[' num2str(param.interval_construct{n}{ii}) ']']);
+        else
+            for kk=1:length(param.interval_construct{n}{ii})
+                if kk==1
+                    param.interval_detail_str = strcat(param.interval_detail_str,['[' num2str(param.interval_construct{n}{ii}(kk))]);
+                elseif kk==length(param.interval_construct{1}{ii})
+                    param.interval_detail_str = strcat(param.interval_detail_str,[num2str(param.interval_construct{n}{ii}(kk)) ']']);
+                    break;
+                else
+                    param.interval_detail_str = strcat(param.interval_detail_str,num2str(param.interval_construct{n}{ii}(kk)));
+                end
+                param.interval_detail_str = strcat(param.interval_detail_str,'_');
+            end
+        end
+    end
+    if n==1
+        param.interval_detail_str = strcat(param.interval_detail_str,'#');
+    end
+end
+
+
+    
 
 end

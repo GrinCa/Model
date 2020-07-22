@@ -4,19 +4,9 @@ function [Wtrans,Ucoeff] = WCAWE_basis(FEmatrices,coeff_deriv,RHSderiv,nbasevec)
 
 
 t_0 = cputime;
-nderiv = size(RHSderiv,2);
 nmat = length(FEmatrices.LHS);
 
 % Setup MUMPS for solution alone (multiple RHS)
-
-%--------------------------------------------------------------------------
-% Tests on number of basis vector requested, and update size of Wtrans and Ucoeff
-%--------------------------------------------------------------------------
-if (nderiv<nbasevec)
-   disp('Error, too many basis vectors requested!');
-   return;
-else
-end
 
 % nbasevec_current = size(Wtrans,2);
 

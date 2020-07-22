@@ -1,4 +1,4 @@
-function create_cross_derivatives(listLHS,coeff_matrices,coeff_RHS,derivative_orders,variables,output_variables)
+function create_cross_derivatives(nmat,coeff_matrices,coeff_RHS,derivative_orders,variables,output_variables)
 
 % this function creates a file called 'get_coeff_deriv_matrices.m' which
 % enables us to fill the arrays of cross derivatives coeff.
@@ -7,7 +7,7 @@ function create_cross_derivatives(listLHS,coeff_matrices,coeff_RHS,derivative_or
 save('Derivatives/derivative_orders.mat','derivative_orders');
 
 % number of matrices
-nmat = length(listLHS);
+
 
 %number of variables of the given problem
 nvariables = length(variables);

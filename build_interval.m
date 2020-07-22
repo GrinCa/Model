@@ -1,73 +1,63 @@
-function param =  build_interval(param)
+function param = build_interval(param)
 
-% this function aim to create the subsets given ref points for Padé
-% expansion
-
-
-%build sub_range with the different freqref
-% this step gives the index for each ref point of the closest point in its
-% respectiv range
+%build sub_interval with the different freqref
 index_freqref = zeros(1,param.nfreqref);
-for ii=1:param.nfreqref
-    [~,index_freqref_ii] = min(abs(param.freq-param.freqref(ii)));
-    index_freqref(ii) = index_freqref_ii;
-end
-
-% we add to these ref point the point in the limit of the range useful to
-% create all the subset
-caracteristic_index = [1 index_freqref param.nfreq];
-% sub_range_freq will contain all the subet in the frequency range
-param.sub_range_freq = cell(1,param.nfreqref);
-param.n_sub_range_freq = length(param.sub_range_freq);
-if param.nfreqref==1
-    param.sub_range_freq{1} = param.freq;
-else
-    for ii=1:param.nfreqref
-        if ii==1
-            left_edge = 1;
-            right_edge = floor(mean([caracteristic_index(ii+1) caracteristic_index(ii+2)]));
-            param.sub_range_freq{ii} = param.freq(left_edge) : param.freqincr : param.freq(right_edge);
-        elseif ii==param.nfreqref
-            left_edge = floor(mean([caracteristic_index(ii) caracteristic_index(ii+1)])) + 1;
-            right_edge = param.nfreq;
-            param.sub_range_freq{ii} = param.freq(left_edge) : param.freqincr : param.freq(right_edge);
-        else
-            left_edge = floor(mean([caracteristic_index(ii) caracteristic_index(ii+1)])) + 1;
-            right_edge = floor(mean([caracteristic_index(ii+1) caracteristic_index(ii+2)]));
-            param.sub_range_freq{ii} = param.freq(left_edge) : param.freqincr : param.freq(right_edge);
-        end
-    end
-end
-
-
-%build sub_range with the different thetaref
 index_thetaref = zeros(1,param.nthetaref);
+for ii=1:param.nfreqref
+    [~,index_freqref(ii)] = min(abs(param.freq-param.freqref(ii)));
+end
 for ii=1:param.nthetaref
-    [~,index_thetaref_ii] = min(abs(param.theta-param.thetaref(ii)));
-    index_thetaref(ii) = index_thetaref_ii;
+    [~,index_thetaref(ii)] = min(abs(param.theta-param.thetaref(ii)));
 end
 
-caracteristic_index = [1 index_thetaref param.ntheta];
-param.sub_range_theta = cell(1,param.nthetaref);
-param.n_sub_range_theta = length(param.sub_range_theta);
-if param.nthetaref==1
-    param.sub_range_theta{1} = param.theta;
-else
-    for ii=1:param.nthetaref
-        if ii==1
-            left_edge = 1;
-            right_edge = floor(mean([caracteristic_index(ii+1) caracteristic_index(ii+2)]));
-            param.sub_range_theta{ii} = param.theta(left_edge) : param.thetaincr : param.theta(right_edge);
-        elseif ii==param.nthetaref
-            left_edge = floor(mean([caracteristic_index(ii) caracteristic_index(ii+1)])) + 1;
-            right_edge = param.ntheta;
-            param.sub_range_theta{ii} = param.theta(left_edge) : param.thetaincr : param.theta(right_edge);
+index_ref = {index_freqref;
+             index_thetaref};
+
+param.sub_interval = {cell(1,length(param.interval_construct{1}));  %freq
+                      cell(1,length(param.interval_construct{2}))}; %theta
+
+id_cut = { zeros(1,length(param.interval_construct{1})-1);
+           zeros(1,length(param.interval_construct{2})-1) }; %freq + angle
+
+for n=1:2
+    for ii=1:length(param.interval_construct{n})-1
+        if param.interval_construct{n}{ii}(end) == param.interval_construct{n}{ii+1}(1)
+            id_cut{n}(ii) = index_ref{n}(param.interval_construct{n}{ii}(end));
         else
-            left_edge = floor(mean([caracteristic_index(ii) caracteristic_index(ii+1)])) + 1;
-            right_edge = floor(mean([caracteristic_index(ii+1) caracteristic_index(ii+2)]));
-            param.sub_range_theta{ii} = param.theta(left_edge) : param.thetaincr : param.theta(right_edge);
+            id_cut{n}(ii) = int16(( index_ref{n}(param.interval_construct{n}{ii}(end)) + ...
+                                    index_ref{n}(param.interval_construct{n}{ii+1}(1)) )/2);
+        end
+    end
+end
+
+
+
+caracteristic_index = {[0 id_cut{1} param.nfreq];
+                       [0 id_cut{2} param.ntheta]};
+                   
+interval = {param.freq;
+            param.theta};
+        
+increment = {param.freqincr;
+             param.thetaincr};
+         
+% interval_index is needed for the reconstruction of the solution on the
+% whole interval
+param.interval_index = { cell(1,length(param.interval_construct{1}));  %freq
+                         cell(1,length(param.interval_construct{2})) }; %theta
+         
+for n=1:2
+    if isempty(id_cut(n,:))
+        param.sub_interval{n} = param.freq;
+    else
+        for ii=1:(length(caracteristic_index{n})-1)
+            left_edge = caracteristic_index{n}(ii)+1;
+            right_edge = caracteristic_index{n}(ii+1);
+            param.interval_index{n}{ii} = left_edge : 1 : right_edge;
+            param.sub_interval{n}{ii} = interval{n}(left_edge) : increment{n} : interval{n}(right_edge);
         end
     end
 end
 
 end
+

@@ -1,4 +1,4 @@
-function SOLMDWCAWE = Solve_MDWCAWE(FEmatrices,MDWCAWE,param)
+function SOLMDWCAWE = Solve_MDWCAWE(FEmatrices,param,MDWCAWE,interval_freq,interval_theta)
 
 
 nmat = length(FEmatrices.LHS);
@@ -14,16 +14,16 @@ end %ii
 % Frequency/Fi loops calculation
 %--------------------------------------------------------------------------
 
-SOLMDWCAWE = zeros(length(param.idx_out),param.nfreq,param.ntheta);
+SOLMDWCAWE = zeros(length(param.idx_out),length(interval_freq),length(interval_theta));
 
-for ii=1:param.nfreq
-   for jj=1:param.ntheta
+for ii=1:length(interval_freq)
+   for jj=1:length(interval_theta)
       Aglob_red = sparse(size(LHS_red{1},1),size(LHS_red{1},2));
-      for kk = 1:nmat
-         Aglob_red = Aglob_red + FEmatrices.LHScoeffderiv_fun{kk,1,1}(param.freq(ii),param.theta(jj))*LHS_red{kk};
+      for kk=1:nmat
+         Aglob_red = Aglob_red + FEmatrices.LHScoeffderiv_fun{kk,1,1}(interval_freq(ii),interval_theta(jj))*LHS_red{kk};
       end %kk
       %%% Calculation of RHS @ (f,theta) %%%
-      RHS = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
+      RHS = build_RHS(interval_freq(ii),interval_theta(jj),FEmatrices,[1,1],param);
       RHS = sparse(MDWCAWE'*RHS(:));
       solp = Aglob_red\RHS;
       resp_P = MDWCAWE*solp;
