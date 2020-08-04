@@ -29,6 +29,7 @@ end
 
 if strcmp(arg.type,'preload')
     data = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(arg.sizemesh),'.mat']));
+    data = data{1};
 end
 
 if strcmp(arg.type,'save_plot')

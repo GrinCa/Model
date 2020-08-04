@@ -12,6 +12,13 @@ function data = post_process(FEmatrices,param,arg,SOLUTION)
         data = get_relative_error(arg);
     end
     
+    if strcmp(arg.type,'total_pressure')
+        data = getTotalPressure(FEmatrices,SOLUTION,param);
+    end
+    
+    if strcmp(arg.type,'normalize_error')
+        data = normalize_error(FEmatrices,arg,param);
+    end
 end
 
 
@@ -29,7 +36,20 @@ function p_t = getTotalPressure(FEmatrices,SOL,param)
     
 end
 
-function TL = calculateTL(FEmatrices,SOLUTION,param)
+function Tau = calculateTL(FEmatrices,SOLUTION,param)
+
+Tau = calculateTau(FEmatrices,SOLUTION,param);
+
+% h = param.thetaincr; %step for intergation
+% %trapeze integration
+% TL = 0; 
+% for k=1:size(Tau,2)-1
+%     TL = TL + (Tau(:,k+1)+TL(:,k))/2*h*sin(2*param.theta(k));
+% end
+
+end
+
+function Tau = calculateTau(FEmatrices,SOLUTION,param)
 
     ndof = size(FEmatrices.Nodes,1);
     Un = zeros(ndof,param.nfreq,param.ntheta);%Un=U1, indeed, the plate is orthogonal to x unitary vector
@@ -46,7 +66,7 @@ function TL = calculateTL(FEmatrices,SOLUTION,param)
     Pinc = calculatePower(FEmatrices.C1,Un_PlateBG,Pc_PlateBG,param);
     Prad = calculatePower(FEmatrices.C2,Un_PlateCavity,Pc_PlateCavity,param);
 
-    TL = 10*log10(Pinc./Prad);
+    Tau = 10*log10(Pinc./Prad);
 
 end
 
@@ -65,6 +85,23 @@ function rel_error = get_relative_error(arg)
     rel_error = cell(1,length(arg.APPROX_SOLUTION));
     for ii=1:length(arg.APPROX_SOLUTION)
         rel_error{ii} = abs((arg.APPROX_SOLUTION{ii}-arg.REF_SOLUTION{1})./arg.REF_SOLUTION{1});
+    end
+end
+
+
+
+function normalized_error = normalize_error(FEmatrices,arg,param)
+    % APPROX_SOLUTION is the FE solution whose size = (ndof,nfreq,ntheta)
+    % REF_SOLUTION is the FPS solution, same size.
+    % normalized_error gives the norm of the relative_error vector calculated
+    % with the approx and ref solutions.
+    ndof = size(arg.REF_SOLUTION,1);
+    normalized_error = zeros(param.nfreq,param.ntheta);
+    for ii=1:param.nfreq
+       for jj=1:param.ntheta
+           rel_error_tmp = (real(arg.APPROX_SOLUTION{1}(:,ii,jj))-real(arg.REF_SOLUTION(:,ii,jj)));%./real(arg.REF_SOLUTION(:,ii,jj));
+           normalized_error(ii,jj) = norm(rel_error_tmp)/sqrt(ndof);
+       end
     end
 end
 

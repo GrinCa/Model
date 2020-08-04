@@ -1,20 +1,20 @@
 // Gmsh project created on Mon Apr 27 08:53:20 2020
 //+
 
-sizemesh = 1;
+sizemesh = 0.2;
 
 
 
 Lbg = 0.75;
 lbg = 0.5;
-lpml = 0.5;
+lpml = 1;
 
 Lplate = 0.5;
-plate_thickness = 0.05;
+plate_thickness = 0.02;
 
-Lcavity = Lplate+0.1;
+Lcavity = Lbg;
 
-coeff = 7;
+coeff = 4;
 
 Point(1) = {plate_thickness, Lplate, Lplate, sizemesh/coeff};
 //+
@@ -32,13 +32,13 @@ Point(15) = {plate_thickness, -Lcavity, -Lcavity, sizemesh};
 //+
 Point(16) = {plate_thickness, Lcavity, -Lcavity, sizemesh};
 
-Point(17) = {2*Lcavity, Lcavity, Lcavity, sizemesh};
+Point(17) = {Lcavity, Lcavity, Lcavity, sizemesh};
 //+
-Point(18) = {2*Lcavity, -Lcavity, Lcavity, sizemesh};
+Point(18) = {Lcavity, -Lcavity, Lcavity, sizemesh};
 //+
-Point(19) = {2*Lcavity, -Lcavity, -Lcavity, sizemesh};
+Point(19) = {Lcavity, -Lcavity, -Lcavity, sizemesh};
 //+
-Point(20) = {2*Lcavity, Lcavity, -Lcavity, sizemesh};
+Point(20) = {Lcavity, Lcavity, -Lcavity, sizemesh};
 //+
 Point(21) = {0, Lplate, Lplate, sizemesh/coeff};
 //+
@@ -152,61 +152,61 @@ Point(75) = {plate_thickness, Lcavity+lpml, -(Lcavity+lpml), sizemesh};
 //+
 Point(76) = {plate_thickness, Lcavity+lpml, Lcavity+lpml, sizemesh};
 //+
-Point(77) = {2*Lcavity, -(Lcavity+lpml), -(Lcavity+lpml), sizemesh};
+Point(77) = {Lcavity, -(Lcavity+lpml), -(Lcavity+lpml), sizemesh};
 //+
-Point(78) = {2*Lcavity, -(Lcavity+lpml), Lcavity+lpml, sizemesh};
+Point(78) = {Lcavity, -(Lcavity+lpml), Lcavity+lpml, sizemesh};
 //+
-Point(79) = {2*Lcavity, Lcavity+lpml, -(Lcavity+lpml), sizemesh};
+Point(79) = {Lcavity, Lcavity+lpml, -(Lcavity+lpml), sizemesh};
 //+
-Point(80) = {2*Lcavity, Lcavity+lpml, Lcavity+lpml, sizemesh};
+Point(80) = {Lcavity, Lcavity+lpml, Lcavity+lpml, sizemesh};
 //+
-Point(81) = {2*Lcavity+lpml, -(Lcavity+lpml), -(Lcavity+lpml), sizemesh};
+Point(81) = {Lcavity+lpml, -(Lcavity+lpml), -(Lcavity+lpml), sizemesh};
 //+
-Point(82) = {2*Lcavity+lpml, -(Lcavity+lpml), Lcavity+lpml, sizemesh};
+Point(82) = {Lcavity+lpml, -(Lcavity+lpml), Lcavity+lpml, sizemesh};
 //+
-Point(83) = {2*Lcavity+lpml, Lcavity+lpml, -(Lcavity+lpml), sizemesh};
+Point(83) = {Lcavity+lpml, Lcavity+lpml, -(Lcavity+lpml), sizemesh};
 //+
-Point(84) = {2*Lcavity+lpml, Lcavity+lpml, Lcavity+lpml, sizemesh};
+Point(84) = {Lcavity+lpml, Lcavity+lpml, Lcavity+lpml, sizemesh};
 //+
-Point(85) = {2*Lcavity+lpml, -(Lcavity+lpml), -Lcavity, sizemesh};
+Point(85) = {Lcavity+lpml, -(Lcavity+lpml), -Lcavity, sizemesh};
 //+
-Point(86) = {2*Lcavity+lpml, -(Lcavity+lpml), Lcavity, sizemesh};
+Point(86) = {Lcavity+lpml, -(Lcavity+lpml), Lcavity, sizemesh};
 //+
-Point(87) = {2*Lcavity+lpml, Lcavity+lpml, -Lcavity, sizemesh};
+Point(87) = {Lcavity+lpml, Lcavity+lpml, -Lcavity, sizemesh};
 //+
-Point(88) = {2*Lcavity+lpml, Lcavity+lpml, Lcavity, sizemesh};
+Point(88) = {Lcavity+lpml, Lcavity+lpml, Lcavity, sizemesh};
 //+
-Point(89) = {2*Lcavity+lpml, -Lcavity, -(Lcavity+lpml), sizemesh};
+Point(89) = {Lcavity+lpml, -Lcavity, -(Lcavity+lpml), sizemesh};
 //+
-Point(90) = {2*Lcavity+lpml, -Lcavity, Lcavity+lpml, sizemesh};
+Point(90) = {Lcavity+lpml, -Lcavity, Lcavity+lpml, sizemesh};
 //+
-Point(91) = {2*Lcavity+lpml, Lcavity, -(Lcavity+lpml), sizemesh};
+Point(91) = {Lcavity+lpml, Lcavity, -(Lcavity+lpml), sizemesh};
 //+
-Point(92) = {2*Lcavity+lpml, Lcavity, Lcavity+lpml, sizemesh};
+Point(92) = {Lcavity+lpml, Lcavity, Lcavity+lpml, sizemesh};
 //+
-Point(93) = {2*Lcavity, -Lcavity, -(Lcavity+lpml), sizemesh};
+Point(93) = {Lcavity, -Lcavity, -(Lcavity+lpml), sizemesh};
 //+
-Point(94) = {2*Lcavity, -Lcavity, Lcavity+lpml, sizemesh};
+Point(94) = {Lcavity, -Lcavity, Lcavity+lpml, sizemesh};
 //+
-Point(95) = {2*Lcavity, Lcavity, -(Lcavity+lpml), sizemesh};
+Point(95) = {Lcavity, Lcavity, -(Lcavity+lpml), sizemesh};
 //+
-Point(96) = {2*Lcavity, Lcavity, Lcavity+lpml, sizemesh};
+Point(96) = {Lcavity, Lcavity, Lcavity+lpml, sizemesh};
 //+
-Point(97) = {2*Lcavity, -(Lcavity+lpml), -Lcavity, sizemesh};
+Point(97) = {Lcavity, -(Lcavity+lpml), -Lcavity, sizemesh};
 //+
-Point(98) = {2*Lcavity, -(Lcavity+lpml), Lcavity, sizemesh};
+Point(98) = {Lcavity, -(Lcavity+lpml), Lcavity, sizemesh};
 //+
-Point(99) = {2*Lcavity, Lcavity+lpml, -Lcavity, sizemesh};
+Point(99) = {Lcavity, Lcavity+lpml, -Lcavity, sizemesh};
 //+
-Point(100) = {2*Lcavity, Lcavity+lpml, Lcavity, sizemesh};
+Point(100) = {Lcavity, Lcavity+lpml, Lcavity, sizemesh};
 //+
-Point(101) = {2*Lcavity+lpml, -Lcavity, -Lcavity, sizemesh};
+Point(101) = {Lcavity+lpml, -Lcavity, -Lcavity, sizemesh};
 //+
-Point(102) = {2*Lcavity+lpml, -Lcavity, Lcavity, sizemesh};
+Point(102) = {Lcavity+lpml, -Lcavity, Lcavity, sizemesh};
 //+
-Point(103) = {2*Lcavity+lpml, Lcavity, -Lcavity, sizemesh};
+Point(103) = {Lcavity+lpml, Lcavity, -Lcavity, sizemesh};
 //+
-Point(104) = {2*Lcavity+lpml, Lcavity, Lcavity, sizemesh};
+Point(104) = {Lcavity+lpml, Lcavity, Lcavity, sizemesh};
 //+
 Point(105) = {plate_thickness, -(Lcavity+lpml), -Lcavity, sizemesh};
 //+

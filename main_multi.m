@@ -24,6 +24,7 @@ DataMap = 'DataMap';
 Derivatives = 'Derivatives';
 
 
+
 addpath(genpath(strcat(pwd,'/',Meshfold)));
 addpath(genpath(strcat(pwd,'/',WCAWEfold)));
 addpath(genpath(strcat(pwd,'/',Mumps)));
@@ -38,7 +39,7 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 0; % to recalculate FreeFem++ matrices
+flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation
 flag.calculateFE = 1;  % calculate FE solution
 flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
@@ -47,15 +48,16 @@ flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
 flag.converge = 0;
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
-flag.calculateTL = 1;
+flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
+flag.normalized_error = 0;
 
 flag.getmatrices = 1;
 
-if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL
+if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL || flag.converge_sizemesh || flag.normalized_error
     flag.getmatrices = 0;
     flag.rerun = 0;
     flag.recalculated = 0;
@@ -83,8 +85,8 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 100;
-param.fmax = 120;
+param.fmin = 600;
+param.fmax = 600;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
@@ -92,7 +94,7 @@ param.nfreq = length(param.freq);
 
 % Angle range
 param.thetamin = 0;
-param.thetamax = 0.5;
+param.thetamax = 0;
 param.theta_range = [param.thetamin param.thetamax];
 param.thetaincr = 0.05;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
@@ -105,31 +107,31 @@ param.direction = [1;1;0];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [100 110 120];
+param.freqref = [600];
 param.nfreqref = length(param.freqref);
 
-param.thetaref = [0 0.25 0.5];
+param.thetaref = [0];
 param.nthetaref = length(param.thetaref);
 
 % interval_construct enables us to build sub basis for WCAWE by
 % by using the ref frequencies as we want. We can choose which ref freq to
 % add for each sub basis. The number of sub basis for WCAWE before SVD is
 % equal to length(interval_construct)
-param.interval_construct = {{[1],[2],[3]};
-                            {[1],[2],[3]}};
+param.interval_construct = {{[1]};
+                            {[1]}};
 
 % Input data for the loop over expansion orders. Note that for each
 % frequency sweep the number of vectors from the WCAWE basis will depend on
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 5;
-param.nvecfreqmax = 5;
+param.nvecfreqmin = 30;
+param.nvecfreqmax = 30;
 param.incrvecfreq = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
 
-param.nvecthetamin = 5;
-param.nvecthetamax = 5;
+param.nvecthetamin = 10;
+param.nvecthetamax = 10;
 param.incrvectheta = 20;
 param.vecthetarange = param.nvecthetamin : param.incrvectheta : param.nvecthetamax;
 
@@ -176,6 +178,7 @@ if flag.getmatrices
                     "Hpmlr.txt","Hpmli.txt",...
                     "Qpmlr.txt","Qpmli.txt",...
                     "C1.txt","C2.txt"];
+
                 
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
     Nodes = FEmatrices.Nodes;
@@ -236,200 +239,200 @@ if flag.recalculated
     % Calculate WCAWE parametric sweep
     %--------------------------------------------------------------------------
 
-%     if flag.calculateMDWCAWE || flag.calculateWCAWE
-% 
-%         % Initialize array of RHSderiv, Cell array linear comb coefficients derivative functions
-%         deriv_deg = [param.nvecfreqmax, param.nvecthetamax];
-% 
-%         if exist('Derivatives/derivative_orders.mat','file') ~= 2
-%             disp('*************************************');
-%             disp('* Recalculate all cross derivatives *');
-%             disp('*************************************');
-%             create_cross_derivatives(nLHS,coeff_LHS,...
-%                                      coeff_RHS,deriv_deg,...
-%                                      {'f';'theta'},{'f,theta';...
-%                                                     'f,theta';...
-%                                                     'f,theta,x1,x2'});
-%         end
-%         load('Derivatives/derivative_orders.mat');
-%         if ~isempty(find(derivative_orders-deriv_deg<0))
-%             disp('*************************************');
-%             disp('* Recalculate all cross derivatives *');
-%             disp('*************************************');
-%             create_cross_derivatives(LHS,coeff_LHS,...
-%                                      coeff_RHS,deriv_deg,...
-%                                      {'f';'theta'},{'f,theta';...
-%                                                     'f,theta';...
-%                                                     'f,theta,x1,x2'});
-%         end
-% 
-%         for nvecfreq=param.vecfreqrange
-%             for nvectheta=param.vecthetarange
-%                 %%%%%
-%                 param.nvecfreq = nvecfreq;
-%                 param.nvectheta = nvectheta;
-%                 %%%%%
-%                 [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
-%                 [FEmatrices.LHScoeffderiv, FEmatrices.RHSderiv] = fill_array_WCAWE(FEmatrices,param);
-% 
-%                 %-----------------------------------------------------------------------
-%                 %MDWCAWE Basis Julien
-%                 %-----------------------------------------------------------------------
-%                 if flag.calculateMDWCAWE
-%                     disp('****************************************');
-%                     disp('* Compute calculation of MDWCAWE basis *');
-%                     disp('****************************************');
-%                     t_MDWCAWE = tic;
-%                     arg.algo = 'MDWCAWE';
-%                     SOLMDWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
-% 
-%                     for n=1:length(param.interval_construct{1}) %loop over frequency intervals
-%                         for m=1:length(param.interval_construct{2}) % loop over angle intervals
-%                             MDWCAWEtmp = build_basis(FEmatrices,param,...
-%                                                      nvecfreq,nvectheta,...
-%                                                      param.interval_construct{1}{n},param.interval_construct{2}{m},...
-%                                                      arg); 
-%                             disp('**** Compute MDWCAWE projection ****');
-%                             SOLMDWCAWE(:,param.interval_index{1}{n},param.interval_index{2}{m}) = Solve_MDWCAWE(FEmatrices,param,MDWCAWEtmp,param.sub_interval{1}{n},param.sub_interval{2}{m});
-%                             disp('**** MDWCAWE projection done ****');
-%                         end
-%                     end
-%                     timing.MDWCAWE = toc;
-%                 end
-% 
-%                 %-----------------------------------------------------------------------
-%                 %WCAWE Basis Romain
-%                 %-----------------------------------------------------------------------
-%                 if flag.calculateWCAWE
-%                     disp('**************************************');
-%                     disp('* Compute calculation of WCAWE basis *');
-%                     disp('**************************************');
-%                     t_WCAWE = tic;
-%                     % Setup list of derivative coefficients and RHS derivatives
-%                     arg.algo = 'WCAWE';
-%                     SOLWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
-% 
-%                     for n=1:length(param.interval_construct{1}) %loop over frequency intervals
-%                         for m=1:length(param.interval_construct{2}) % loop over angle intervals
-%                             WCAWEtmp = build_basis(FEmatrices,param,...
-%                                                    nvecfreq,nvectheta,...
-%                                                    param.interval_construct{1}{n},param.interval_construct{2}{m},...
-%                                                    arg); 
-%                             disp('**** Compute MDWCAWE projection ****');
-%                             SOLWCAWE(:,param.interval_index{1}{n},param.interval_index{2}{m}) = Solve_MDWCAWE(FEmatrices,param,WCAWEtmp,param.sub_interval{1}{n},param.sub_interval{2}{m});
-%                             disp('**** MDWCAWE projection done ****');
-%                         end
-%                     end
-%                     timing.WCAWE = toc;
-%                 end
-%             end
-%        end
-%     end
-if flag.calculateMDWCAWE || flag.calculateWCAWE
-    
-for nvecfreq=param.vecfreqrange
-    for nvectheta=param.vecthetarange
-        %%%%%
-        param.nvecfreq = nvecfreq;
-        param.nvectheta = nvectheta;
-        %%%%%
-        [LHScoeffderiv_fun,RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
-        FEmatrices.LHScoeffderiv_fun = LHScoeffderiv_fun;
-        FEmatrices.RHScoeffderiv_fun = RHScoeffderiv_fun;
-        [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,param);
-        
-        if flag.calculateMDWCAWE
-        %-----------------------------------------------------------------------
-        %MDWCAWE Basis Julien
-        %-----------------------------------------------------------------------
-        disp('****************************************');
-        disp('* Compute calculation of MDWCAWE basis *');
-        disp('****************************************');
-        t_MDWCAWE = cputime;
-        MDWCAWE = [];
-        for n=1:param.nfreqref
-            for m=1:param.nthetaref
-                MDWCAWEtmp = MDWCAWE_basis(LHS,LHScoeffderiv{n,m},RHSderiv{n,m},nvecfreq,nvectheta);
-                MDWCAWE = [MDWCAWE MDWCAWEtmp];
-            end
+    if flag.calculateMDWCAWE || flag.calculateWCAWE
+
+        % Initialize array of RHSderiv, Cell array linear comb coefficients derivative functions
+        deriv_deg = [param.nvecfreqmax, param.nvecthetamax];
+
+        if exist('Derivatives/derivative_orders.mat','file') ~= 2
+            disp('*************************************');
+            disp('* Recalculate all cross derivatives *');
+            disp('*************************************');
+            create_cross_derivatives(nLHS,coeff_LHS,...
+                                     coeff_RHS,deriv_deg,...
+                                     {'f';'theta'},{'f,theta';...
+                                                    'f,theta';...
+                                                    'f,theta,x1,x2'});
         end
-        [uu,vv,ww] = svd(MDWCAWE,0);
-        iiselect = find(diag(vv)>vv(1,1)*1e-15);
-        MDWCAWEsvd = uu(:,iiselect);
-        nsvd = size(MDWCAWEsvd,2);
-        output = sprintf("[MDWCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
-        disp(output);
-        disp('**** Compute MDWCAWE projection ****');
-        SOLMDWCAWE = Solve(FEmatrices,MDWCAWEsvd,param);
-        disp('**** MDWCAWE projection done ****');
-        timing.MDWCAWE = cputime-t_MDWCAWE;
+        load('Derivatives/derivative_orders.mat');
+        if ~isempty(find(derivative_orders-deriv_deg<0))
+            disp('*************************************');
+            disp('* Recalculate all cross derivatives *');
+            disp('*************************************');
+            create_cross_derivatives(LHS,coeff_LHS,...
+                                     coeff_RHS,deriv_deg,...
+                                     {'f';'theta'},{'f,theta';...
+                                                    'f,theta';...
+                                                    'f,theta,x1,x2'});
         end
-        %-----------------------------------------------------------------------
-        %WCAWE Basis Romain
-        %-----------------------------------------------------------------------
-        if flag.calculateWCAWE
-            disp('**************************************');
-            disp('* Compute calculation of WCAWE basis *');
-            disp('**************************************');
-            t_WCAWE = cputime;
-            % Setup list of derivative coefficients and RHS derivatives
-            WCAWE = [];
-            Wtranstmp_order = param.nvecfreq+param.nvectheta-1;
-            for n=1:param.nfreqref
-                for m=1:param.nthetaref
-                    LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
-                    RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
-                    counter = 1;
-                    for ii = 1:nvecfreq
-                        if ii<nvecfreq
-                            LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,1);
-                            RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,1);
-                            counter = counter+1;
-                        elseif ii==nvecfreq
-                            for jj = 1:nvectheta
-                               LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
-                               RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
-                               counter = counter+1;
-                            end % jj
+
+        for nvecfreq=param.vecfreqrange
+            for nvectheta=param.vecthetarange
+                %%%%%
+                param.nvecfreq = nvecfreq;
+                param.nvectheta = nvectheta;
+                %%%%%
+                [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
+                [FEmatrices.LHScoeffderiv, FEmatrices.RHSderiv] = fill_array_WCAWE(FEmatrices,param);
+
+                %-----------------------------------------------------------------------
+                %MDWCAWE Basis Julien
+                %-----------------------------------------------------------------------
+                if flag.calculateMDWCAWE
+                    disp('****************************************');
+                    disp('* Compute calculation of MDWCAWE basis *');
+                    disp('****************************************');
+                    t_MDWCAWE = tic;
+                    arg.algo = 'MDWCAWE';
+                    SOLMDWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
+
+                    for n=1:length(param.interval_construct{1}) %loop over frequency intervals
+                        for m=1:length(param.interval_construct{2}) % loop over angle intervals
+                            MDWCAWEtmp = build_basis(FEmatrices,param,...
+                                                     nvecfreq,nvectheta,...
+                                                     param.interval_construct{1}{n},param.interval_construct{2}{m},...
+                                                     arg); 
+                            disp('**** Compute MDWCAWE projection ****');
+                            SOLMDWCAWE(:,param.interval_index{1}{n},param.interval_index{2}{m}) = Solve_MDWCAWE(FEmatrices,param,MDWCAWEtmp,param.sub_interval{1}{n},param.sub_interval{2}{m});
+                            disp('**** MDWCAWE projection done ****');
                         end
-                    end % ii
-                    WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-                    WCAWE = [WCAWE WCAWEtmp];
-                    
-                    LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
-                    RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
-                    counter = 1;
-                    for jj = 1:nvectheta
-                        if jj<nvectheta
-                            LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,1,jj);
-                            RHSderivtmp(:,counter) = RHSderiv{n,m}(:,1,jj);
-                            counter = counter+1;
-                        elseif jj==nvectheta
-                            for ii = 1:nvecfreq
-                               LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
-                               RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
-                               counter = counter+1;
-                            end % ii
+                    end
+                    timing.MDWCAWE = toc;
+                end
+
+                %-----------------------------------------------------------------------
+                %WCAWE Basis Romain
+                %-----------------------------------------------------------------------
+                if flag.calculateWCAWE
+                    disp('**************************************');
+                    disp('* Compute calculation of WCAWE basis *');
+                    disp('**************************************');
+                    t_WCAWE = tic;
+                    % Setup list of derivative coefficients and RHS derivatives
+                    arg.algo = 'WCAWE';
+                    SOLWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
+
+                    for n=1:length(param.interval_construct{1}) %loop over frequency intervals
+                        for m=1:length(param.interval_construct{2}) % loop over angle intervals
+                            WCAWEtmp = build_basis(FEmatrices,param,...
+                                                   nvecfreq,nvectheta,...
+                                                   param.interval_construct{1}{n},param.interval_construct{2}{m},...
+                                                   arg); 
+                            disp('**** Compute MDWCAWE projection ****');
+                            SOLWCAWE(:,param.interval_index{1}{n},param.interval_index{2}{m}) = Solve_MDWCAWE(FEmatrices,param,WCAWEtmp,param.sub_interval{1}{n},param.sub_interval{2}{m});
+                            disp('**** MDWCAWE projection done ****');
                         end
-                    end % jj
-                    WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-                    WCAWE = [WCAWE WCAWEtmp(:,2:end-1)];
+                    end
+                    timing.WCAWE = toc;
                 end
             end
-            [uu,vv,ww] = svd(WCAWE,0);
-            iiselect = find(diag(vv)>vv(1,1)*1e-15);
-            WCAWEsvd = uu(:,iiselect);
-            nsvd = size(WCAWEsvd,2);
-            output = sprintf("[WCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(WCAWE,2));
-            disp(output);
-            disp('**** Compute WCAWE projection ****');
-            SOLWCAWE = Solve(FEmatrices,WCAWEsvd,param);
-            disp('**** WCAWE projection done ****');
-            timing.WCAWE = cputime-t_WCAWE;
-        end
+       end
     end
-end
-end
+% if flag.calculateMDWCAWE || flag.calculateWCAWE
+%     
+% for nvecfreq=param.vecfreqrange
+%     for nvectheta=param.vecthetarange
+%         %%%%%
+%         param.nvecfreq = nvecfreq;
+%         param.nvectheta = nvectheta;
+%         %%%%%
+%         [LHScoeffderiv_fun,RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
+%         FEmatrices.LHScoeffderiv_fun = LHScoeffderiv_fun;
+%         FEmatrices.RHScoeffderiv_fun = RHScoeffderiv_fun;
+%         [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,param);
+%         
+%         if flag.calculateMDWCAWE
+%         %-----------------------------------------------------------------------
+%         %MDWCAWE Basis Julien
+%         %-----------------------------------------------------------------------
+%         disp('****************************************');
+%         disp('* Compute calculation of MDWCAWE basis *');
+%         disp('****************************************');
+%         t_MDWCAWE = cputime;
+%         MDWCAWE = [];
+%         for n=1:param.nfreqref
+%             for m=1:param.nthetaref
+%                 MDWCAWEtmp = MDWCAWE_basis(LHS,LHScoeffderiv{n,m},RHSderiv{n,m},nvecfreq,nvectheta);
+%                 MDWCAWE = [MDWCAWE MDWCAWEtmp];
+%             end
+%         end
+%         [uu,vv,ww] = svd(MDWCAWE,0);
+%         iiselect = find(diag(vv)>vv(1,1)*1e-15);
+%         MDWCAWEsvd = uu(:,iiselect);
+%         nsvd = size(MDWCAWEsvd,2);
+%         output = sprintf("[MDWCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
+%         disp(output);
+%         disp('**** Compute MDWCAWE projection ****');
+%         SOLMDWCAWE = Solve(FEmatrices,MDWCAWEsvd,param);
+%         disp('**** MDWCAWE projection done ****');
+%         timing.MDWCAWE = cputime-t_MDWCAWE;
+%         end
+%         %-----------------------------------------------------------------------
+%         %WCAWE Basis Romain
+%         %-----------------------------------------------------------------------
+%         if flag.calculateWCAWE
+%             disp('**************************************');
+%             disp('* Compute calculation of WCAWE basis *');
+%             disp('**************************************');
+%             t_WCAWE = cputime;
+%             % Setup list of derivative coefficients and RHS derivatives
+%             WCAWE = [];
+%             Wtranstmp_order = param.nvecfreq+param.nvectheta-1;
+%             for n=1:param.nfreqref
+%                 for m=1:param.nthetaref
+%                     LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
+%                     RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
+%                     counter = 1;
+%                     for ii = 1:nvecfreq
+%                         if ii<nvecfreq
+%                             LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,1);
+%                             RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,1);
+%                             counter = counter+1;
+%                         elseif ii==nvecfreq
+%                             for jj = 1:nvectheta
+%                                LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
+%                                RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
+%                                counter = counter+1;
+%                             end % jj
+%                         end
+%                     end % ii
+%                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
+%                     WCAWE = [WCAWE WCAWEtmp];
+%                     
+%                     LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
+%                     RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
+%                     counter = 1;
+%                     for jj = 1:nvectheta
+%                         if jj<nvectheta
+%                             LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,1,jj);
+%                             RHSderivtmp(:,counter) = RHSderiv{n,m}(:,1,jj);
+%                             counter = counter+1;
+%                         elseif jj==nvectheta
+%                             for ii = 1:nvecfreq
+%                                LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
+%                                RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
+%                                counter = counter+1;
+%                             end % ii
+%                         end
+%                     end % jj
+%                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
+%                     WCAWE = [WCAWE WCAWEtmp(:,2:end-1)];
+%                 end
+%             end
+%             [uu,vv,ww] = svd(WCAWE,0);
+%             iiselect = find(diag(vv)>vv(1,1)*1e-15);
+%             WCAWEsvd = uu(:,iiselect);
+%             nsvd = size(WCAWEsvd,2);
+%             output = sprintf("[WCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(WCAWE,2));
+%             disp(output);
+%             disp('**** Compute WCAWE projection ****');
+%             SOLWCAWE = Solve(FEmatrices,WCAWEsvd,param);
+%             disp('**** WCAWE projection done ****');
+%             timing.WCAWE = cputime-t_WCAWE;
+%         end
+%     end
+% end
+% end
 
     %--------------------------------------------------------------------------
     % Saves
@@ -579,8 +582,9 @@ if flag.convert2VTK
     if flag.calculateFE
         SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};
+        arg.type = 'total_pressure';
         PARTITION{5} = {'data',...
-                        getTotalPressure(FEmatrices,SOLFE,param),...
+                        post_process(FEmatrices,param,arg,SOLFE),...
                         'Total_pressure'};
         
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
@@ -591,8 +595,7 @@ if flag.calculateTL
     clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;
     arg.sizemesh = sizemesh;
     arg.type = 'preload';
-    DATA = IO_data(arg,param,mesh);
-    FEmatrices = DATA{1};
+    FEmatrices = IO_data(arg,param,mesh);
     
     VALUES_SOL = cell(2,2); % index 2
     VALUES_name = cell(1,2);
@@ -658,24 +661,14 @@ if flag.calculateTL
             end
         end
     end
-    
-%     val_FE = zeros(param.nfreq,param.ntheta);
-%     val_MDWCAWE = zeros(param.nfreq,param.ntheta);
-%     val_WCAWE = zeros(param.nfreq,param.ntheta);
-%     for ii=1:param.nfreq
-%         for jj=1:param.ntheta
-%             val_FE(ii,jj) = norm(SOLFE(:,ii,jj));
-%             val_MDWCAWE(ii,jj) = norm(SOLMDWCAWE{1}(:,ii,jj));
-%             val_WCAWE(ii,jj) = norm(SOLWCAWE{1}(:,ii,jj));
-%         end
-%     end
-    
+   
     argcomp.zlabel = 'TL';
     argcomp.title = 'MDWCAWE';
     argcomp.type = 'plotTL';
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_MDWCAWE';
     argcomp.label = VALUES_name;
+    argcomp.external_plot.is_needed = false;
     show_graph(argcomp,VALUES_SOL(1,:),mesh,param);
     
     argcomp.zlabel = 'TL';
@@ -684,6 +677,7 @@ if flag.calculateTL
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_WCAWE';
     argcomp.label = VALUES_name;
+    argcomp.external_plot.is_needed = false;
     show_graph(argcomp,VALUES_SOL(2,:),mesh,param);
     
     argtmp.type = 'rel_error';
@@ -695,13 +689,65 @@ if flag.calculateTL
     argcomp.split = 1;
     argcomp.name_plot = 'Relative_error';
     argcomp.label = VALUES_name(2:end);
+    argcomp.external_plot.is_needed = false;
     show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
     
     
 end
 
 
+if flag.converge_sizemesh
 
+    sizemesh_file = load('sizemesh.txt');
+    meanFE = cell(length(sizemesh_file),1);
+    title_VALUES_1 = cell(length(sizemesh_file),1);
+    argcomp.label = cell(length(sizemesh_file),1);
+    for ii=1:length(sizemesh_file)
+        DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/DATA_sizemesh_',num2str(sizemesh_file(ii)),'.mat']));
+        FEmatrices = DATA{1};
+        param = DATA{2};
+        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE_sizemesh_',num2str(sizemesh_file(ii)),'.mat']));
+        SOLFE = SOLFE{1};
+        meanFE{ii} = mean(real(SOLFE(FEmatrices.PlateCavity_nodes,:)),1);
+        argcomp.label{ii} = [num2str(size(FEmatrices.Nodes,1)) ' ndofs'];
+    end
+
+    argcomp.type = 'converge';
+    argcomp.xlabel = 'freq';
+    argcomp.ylabel = 'mean pressure (Pa)';
+    argcomp.title = '';
+    argcomp.name_plot = ['Convergence_FE_[' replace(num2str(sizemesh_file'),' ','_') ']'];
+    argcomp.external_plot.is_needed = false;
+    show_graph(argcomp,meanFE,mesh,param);
+end
+
+if flag.normalized_error
+    VALUES = cell(1,2);
+    arg.sizemesh = sizemesh;
+    arg.type = 'preload';
+    FEmatrices = IO_data(arg,param,mesh);
+    arg.type = 'load_FE';
+    arg.REF_SOLUTION = IO_data(arg,param,mesh);
+    arg.type = 'load_MDWCAWE';
+    arg.APPROX_SOLUTION = IO_data(arg,param,mesh);
+    arg.type = 'normalize_error';
+    VALUES{1} = log10(post_process(FEmatrices,param,arg));
+    arg.split = false;
+    arg.label = {'MDWCAWE','WCAWE'};
+    arg.zlabel = 'error';
+    arg.title = {'FE/MDWCAWE','FE/WCAWE'};
+    arg.external_plot.is_needed = false;
+    arg.name_plot = 'relative error norm';
+    %show_graph(arg,VALUES,mesh,param);
+    
+    
+    arg.type = 'load_WCAWE';
+    arg.APPROX_SOLUTION = IO_data(arg,param,mesh);
+    arg.type = 'normalize_error';
+    arg.split = true;
+    VALUES{2} = log10(post_process(FEmatrices,param,arg));
+    show_graph(arg,VALUES,mesh,param);
+end
 
 
 
