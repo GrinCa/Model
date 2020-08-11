@@ -1,0 +1,75 @@
+/*
+Be careful concerning the quotes //. Those operator are used to end a 
+macro, if they are in the macro they will end the macro, raising some
+errors.
+*/
+
+macro saveBoundariesLabels(Vh, boundaryLabel, filename)
+{
+  Vh[int] labelsArray(boundaryLabel.n);
+  for(int i=0; i<boundaryLabel.n; i++)
+  {
+    varf vb1(u,v)= on(boundaryLabel[i],u=1);
+    labelsArray[i][] = vb1(0,VhF,tgv=1);
+  }
+  {
+    ofstream fout(filename);
+    for(int i=0; i<boundaryLabel.n; i++)
+    {
+      fout << boundaryLabel[i] << " ";
+    }
+    fout << endl;
+    for(int j=0; j<Vh.ndof; j++)
+    {
+      for(int i=0; i<boundaryLabel.n; i++)
+      {
+        fout << labelsArray[i][][j] << " ";
+      }
+      fout << endl;
+    }
+  }
+}//EOM
+
+macro saveNodes(Vh, filename)
+{
+  Vh[int] vhn(3);
+  vhn[0] = x;
+  vhn[1] = y;
+  vhn[2] = z;
+  {
+    ofstream fout(filename);
+    for (int n = 0; n < Vh.ndof; n++)
+    {
+      for (int d = 0; d < 3; d++)
+      {
+        fout << "  " << vhn[d][][n];
+      }
+      fout << endl;
+    }
+  }
+}//EOM
+
+
+macro saveConnectivity(Th, Vh, filename)
+{
+  {
+    ofstream fout(filename);
+    for (int i=0; i<Th.nt; i++){
+      for (int j=0; j<Vh.ndofK; j++){
+        fout << Vh(i,j) << " ";
+      }
+      fout << endl;
+    }
+  }
+}//EOM
+
+
+macro saveRegionLabels(Vh, filename)
+{
+  {
+    ofstream fout(filename);
+    for (int i=0; i<Th.nt; i++){
+      fout << Th[i].region << endl;
+    }
+  }
+}//EOM

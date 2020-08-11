@@ -5,7 +5,7 @@
 load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
-include "/home/julien/Documents/FreeFem_routines/exports.idp"
+include "exports.idp"
 
 string root="Matrices/Platev2/"; // Matrices/Plate/
 mesh3 Th = gmshload3("Platev2.msh");
