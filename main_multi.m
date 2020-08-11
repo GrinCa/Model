@@ -48,7 +48,7 @@ flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
 flag.converge = 0;
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 flag.plotMQP = 0;
 flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
@@ -66,7 +66,7 @@ end
 
 
 % Input files for mesh and FE matrices
-mesh.file = 'Modelv2';
+mesh.file = 'Platev2';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 
@@ -107,7 +107,7 @@ param.direction = [1;1;0];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [600];
+param.freqref = [400];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -164,20 +164,18 @@ param = build_interval(param);
 % Matrices calculated with Freefem++
 %--------------------------------------------------------------------------
 if flag.getmatrices
+    matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
+                    "Hr.txt","Hi.txt",...
+                    "Qr.txt","Qi.txt",...
+                    "C1.txt","C2.txt"];
+                
 %     matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
 %                     "Hbg.txt","Qbg.txt",...
-%                     "Hcav.txt","Qcav.txt",...
+%                     "Hcavr.txt","Qcavr.txt",...
+%                     "Hcavi.txt","Qcavi.txt",...
 %                     "Hpmlr.txt","Hpmli.txt",...
 %                     "Qpmlr.txt","Qpmli.txt",...
 %                     "C1.txt","C2.txt"];
-                
-    matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
-                    "Hbg.txt","Qbg.txt",...
-                    "Hcavr.txt","Qcavr.txt",...
-                    "Hcavi.txt","Qcavi.txt",...
-                    "Hpmlr.txt","Hpmli.txt",...
-                    "Qpmlr.txt","Qpmli.txt",...
-                    "C1.txt","C2.txt"];
 
                 
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
@@ -191,14 +189,13 @@ end
 
 
 
-
-
 if flag.recalculated
 
     %--------------------------------------------------------------------------
     % Calculate reference finite element parametric sweep
     %--------------------------------------------------------------------------
-
+    
+    [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
 
     if flag.calculateFE == 1
        disp('**************************');
@@ -209,9 +206,9 @@ if flag.recalculated
        % Parametric loop calculation
        id = initmumps;
        id = zmumps(id);
-       id.JOB = 1;
+       id.JOB = 1; %analysis
        matrix_analysis = LHS{1} + LHS{2};
-       id = zmumps(id,matrix_analysis);
+       id = zmumps(id,matrix_analysis); % perform analysis
        for ii=1:param.nfreq
            for jj=1:param.ntheta
                tic;
@@ -222,14 +219,14 @@ if flag.recalculated
                end
 
                id.JOB = 5;
-               id.RHS = FEmatrices.RHS_BG(:,ii,jj);
+               id.RHS = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
                SOLFE(:,ii,jj) = resp_P;
                toc;
            end
        end
-       id.JOB = -2; id = zmumps(id);%delete the instance of Mumps
+       id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
        timing.FE = cputime-t_FE;
     end
 
@@ -540,52 +537,54 @@ if flag.convert2VTK
     FEmatrices = DATA{1};
     param = DATA{2};
     %%%
-    PARTITION = cell(5);
-    
-    PARTITION{1} = {'scalar',...
-                    FEmatrices.indexP_CAVITY,...
-                    FEmatrices.cavity_nodes,...
-                    'CAVITY_PRESSURE'};
-    PARTITION{2} = {'scalar',...
-                     FEmatrices.indexP_BG_PML,...
-                     FEmatrices.BG_PML_nodes,...
-                     'SCATTERED_PRESSURE'};
-    PARTITION{3} = {'vector',...
-                    [FEmatrices.indexu1;...
-                     FEmatrices.indexu2;...
-                     FEmatrices.indexu3],...
-                     FEmatrices.plate_nodes,...
-                     'DISPLACEMENT'};
-    PARTITION{4} = {'data',...
-                     FEmatrices.BG_pressure,...
-                     'BG_PRESSURE'};
-    
-                              
+%     PARTITION = cell(5);
+%     
+%     PARTITION{1} = {'scalar',...
+%                     FEmatrices.indexP_CAVITY,...
+%                     FEmatrices.cavity_nodes,...
+%                     'CAVITY_PRESSURE'};
+%     PARTITION{2} = {'scalar',...
+%                      FEmatrices.indexP_BG_PML,...
+%                      FEmatrices.BG_PML_nodes,...
+%                      'SCATTERED_PRESSURE'};
+%     PARTITION{3} = {'vector',...
+%                     [FEmatrices.indexu1;...
+%                      FEmatrices.indexu2;...
+%                      FEmatrices.indexu3],...
+%                      FEmatrices.plate_nodes,...
+%                      'DISPLACEMENT'};
+%     PARTITION{4} = {'data',...
+%                      FEmatrices.BG_pressure,...
+%                      'BG_PRESSURE'};
 %     Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
 %     Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
 %     PARTITION{5} = {'data',...
 %                      Force_vector,...
 %                      'FORCE_VECTOR'};
+
+     PARTITION = cell(2);
+     PARTITION{1} = {'scalar',...
+                     FEmatrices.indexP,...
+                     FEmatrices.acoustic_nodes,...
+                    'PRESSURE'};
+     PARTITION{2} = {'vector',...
+                    [FEmatrices.indexu1;...
+                     FEmatrices.indexu2;...
+                     FEmatrices.indexu3],...
+                     FEmatrices.elastic_nodes,...
+                     'DISPLACEMENT'};
+                              
+
     %%%
     range = {1:1:1, 1:1:1};
-    
-    if flag.calculateMDWCAWE
-        SOLMDWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',param.path2,'/SOLMDWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
-        SOLMDWCAWE = SOLMDWCAWE{1};
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLMDWCAWE,PARTITION,param,range);
-    end
-    if flag.calculateWCAWE
-        SOLWCAWE = struct2cell(load(['Matrices/',mesh.file,'/',param.path2,'/SOLWCAWE','_sizemesh_',num2str(sizemesh),'.mat']));
-        SOLWCAWE = SOLWCAWE{1};
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLWCAWE,PARTITION,param,range);
-    end
+
     if flag.calculateFE
         SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};
-        arg.type = 'total_pressure';
-        PARTITION{5} = {'data',...
-                        post_process(FEmatrices,param,arg,SOLFE),...
-                        'Total_pressure'};
+%         arg.type = 'total_pressure';
+%         PARTITION{5} = {'data',...
+%                         post_process(FEmatrices,param,arg,SOLFE),...
+%                         'Total_pressure'};
         
         convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
     end

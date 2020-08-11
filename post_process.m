@@ -2,7 +2,7 @@ function data = post_process(FEmatrices,param,arg,SOLUTION)
 
     % arg: struct of different argument to perform specific tasks
     % SOLUTION: struct of SOLUTION calculated with FE, MDWCAWE or WCAWE algo
-
+    data = false;
 
     if strcmp(arg.type,'calculateTL')
         data = calculateTL(FEmatrices,SOLUTION,param);
@@ -19,6 +19,12 @@ function data = post_process(FEmatrices,param,arg,SOLUTION)
     if strcmp(arg.type,'normalize_error')
         data = normalize_error(FEmatrices,arg,param);
     end
+    
+    if strcmp(arg.type,'show_image')
+        show_image(arg.matrix);
+    end
+    
+    
 end
 
 
@@ -36,7 +42,7 @@ function p_t = getTotalPressure(FEmatrices,SOL,param)
     
 end
 
-function Tau = calculateTL(FEmatrices,SOLUTION,param)
+function TL = calculateTL(FEmatrices,SOLUTION,param)
 
 Tau = calculateTau(FEmatrices,SOLUTION,param);
 
@@ -44,7 +50,7 @@ Tau = calculateTau(FEmatrices,SOLUTION,param);
 % %trapeze integration
 % TL = 0; 
 % for k=1:size(Tau,2)-1
-%     TL = TL + (Tau(:,k+1)+TL(:,k))/2*h*sin(2*param.theta(k));
+%     TL = TL + (Tau(:,k+1)+Tau(:,k))/2*h*sin((param.theta(k) + param.theta(k+1)));
 % end
 
 end
@@ -103,6 +109,17 @@ function normalized_error = normalize_error(FEmatrices,arg,param)
            normalized_error(ii,jj) = norm(rel_error_tmp)/sqrt(ndof);
        end
     end
+end
+
+
+
+function show_image(sparse_matrix)
+
+[rows,colums,values] = find(sparse_matrix);
+values = ones(length(values),1);
+
+image(real(sparse(rows,colums,values)),'CDataMapping','scaled');
+
 end
 
    

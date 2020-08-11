@@ -7,8 +7,8 @@ load "gmsh" // for loading gmsh meshes
 
 include "/home/julien/Documents/FreeFem_routines/exports.idp"
 
-string root="Matrices/Plate/"; // Matrices/Plate/
-mesh3 Th = gmshload3("Plate.msh");
+string root="Matrices/Platev2/"; // Matrices/Plate/
+mesh3 Th = gmshload3("Platev2.msh");
 
 int acoustic = 1;
 int elastic = 2;
@@ -75,21 +75,21 @@ real L2y = L+Lpml;
 real L1z = L;//real L1z = 3.0;
 real L2z = L+Lpml;
 
-real fstar = 200;
+real fstar = 300;
 real km = (2*pi*fstar)/340;
 
 cout << "km = " << km << endl;
 
-real sigmax = 6.27/10;
-real sigmay = 8.63/10; 
-real sigmaz = 8.63/10;
+real sigmax = 1;//6.27;
+real sigmay = 1.5;//8.63; 
+real sigmaz = 1.5;//8.63;
 
 func PML3x=sigmax/(L2x-abs(x)) ;
-func decay1x=(abs(x)>1e5) ? 1+1i*PML3x/km : 1 ;
+func decay1x=(abs(x)>2*L) ? 1+1i*PML3x/km : 1 ;
 func PML3y=sigmay/(L2y-abs(y)) ;
-func decay1y=(abs(y)>1e5) ? 1+1i*PML3y/km : 1 ;
+func decay1y=(abs(y)>L) ? 1+1i*PML3y/km : 1 ;
 func PML3z=sigmaz/(L2z-abs(z)) ;
-func decay1z=(abs(z)>1e5) ? 1+1i*PML3z/km : 1 ;
+func decay1z=(abs(z)>L) ? 1+1i*PML3z/km : 1 ;
 
 
 
@@ -108,28 +108,26 @@ varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, elastic)( rhoS*[u1,u2,u3]'*[v1,v2,v3]
 
 //Cavity
 
-varf hr(p, v) = int3d(Th, acoustic, PML)( Grad(p)'*Grad(v) );
-varf qr(p, v) = int3d(Th, acoustic, PML)( p*v );
 
-/*
+
 varf hr(p, v) = int3d(Th, acoustic, PML)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +
                                           dy(p)*dy(v)*real( decay1x*decay1z/decay1y ) +
-                                          dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );*/
-/*
+                                          dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );
+
 varf hi(p, v) = int3d(Th, acoustic, PML)( dx(p)*dx(v)*imag( decay1y*decay1z/decay1x ) +
                                           dy(p)*dy(v)*imag( decay1x*decay1z/decay1y ) +
                                           dz(p)*dz(v)*imag( decay1x*decay1y/decay1z ) );
 
-varf qr(p, v) = int3d(Th, acoustic, PML)( p*v*real( decay1x*decay1y*decay1z ) );*/
-/*
+varf qr(p, v) = int3d(Th, acoustic, PML)( p*v*real( decay1x*decay1y*decay1z ) );
+
 varf qi(p, v) = int3d(Th, acoustic, PML)( p*v*imag( decay1x*decay1y*decay1z ) );
-*/
+
 //Coupling
 varf c1(p,v) = int2d(Th, extpressure)( p*v );
 varf c2(p,v) = int2d(Th, coupling)( p*v );
 
-//real P0 = 1;
-//varf rhs(unused,v) = int2d(Th, extpressure)(P0*v);
+
+varf rhs(unused,v) = int2d(Th, extpressure)(1.0*v);
 
 
 //--------------------------------------------------------------------------
@@ -142,15 +140,15 @@ matrix M = m(VhS, VhS);
 //Fluid
 matrix Hr = hr(VhF, VhF);
 matrix Qr = qr(VhF, VhF);
-//matrix Hi = hi(VhF, VhF);
-//matrix Qi = qi(VhF, VhF);
+matrix Hi = hi(VhF, VhF);
+matrix Qi = qi(VhF, VhF);
 //Coupling
 matrix C1 = c1(VhF, VhF);
 matrix C2 = c2(VhF, VhF);
 
 //RHS
-//real[int] rhstmp = rhs(0, VhF);
-//matrix RHS = rhstmp;
+real[int] rhstmp = rhs(0, VhF);
+matrix RHS = rhstmp;
 
 
 
@@ -171,13 +169,13 @@ fout<< Hr <<endl;
 ofstream fout(root+"Qr.txt");
 fout<< Qr <<endl;
 }
-/*{ofstream fout(root+"Hi.txt");
+{ofstream fout(root+"Hi.txt");
 fout<< Hi <<endl;
 }
 {
 ofstream fout(root+"Qi.txt");
 fout<< Qi <<endl;
-}*/
+}
 {
 ofstream fout(root+"C1.txt");
 fout<< C1 <<endl;
@@ -186,10 +184,10 @@ fout<< C1 <<endl;
 ofstream fout(root+"C2.txt");
 fout<< C2 <<endl;
 }
-//{
-//ofstream fout(root+"RHS.txt");
-//fout<< RHS <<endl;
-//}
+{
+ofstream fout(root+"RHS.txt");
+fout<< RHS <<endl;
+}
 
 
 saveRegionLabels(VhF, root+"regions.txt");

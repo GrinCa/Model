@@ -12,7 +12,7 @@
 
 clear all;
 
-Geofile = 'Modelv2';
+Geofile = 'Platev2';
 
 
 % both arrays stand for size of elastic and acoustic nodes respectively.
@@ -22,7 +22,7 @@ Geofile = 'Modelv2';
 % NOTE : If the size of elastic and acoustic is different, the mesh
 % elements won't be regular, which implies that the mean quadratic pressure
 % is no longer a good indicator.
-sizemesh_acoustic = [0.2];
+sizemesh_acoustic = [0.15];
 sizemesh = [sizemesh_acoustic];
 file_sizemesh = fopen('sizemesh.txt','wt');
 

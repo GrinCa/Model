@@ -1,13 +1,7 @@
 function [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param)
 
-isupdated = 0; % isupdated=1 : recalculate freefrem++ script
-
 for ii=1:length(matrix_names)
     matrix_names{ii} = strcat(mesh.file,'/',matrix_names{ii});
-    if exist(matrix_names(ii),"file")
-    else
-        isupdated=1;
-    end
 end
 
 
@@ -15,7 +9,7 @@ end
 %Run FreeFem++ script, IF NEEDED
 %--------------------------------------------------------------------------
 
-if (isupdated||flag.rerun) % EDP updated and/or mesh updated
+if (flag.rerun) % EDP updated and/or mesh updated
    t_0 = cputime;
    disp('************************');
    disp('*Rerun FreeFem++ script*');
@@ -38,8 +32,6 @@ listLHS = cell(1,length(matrix_names));
 
 
 % Matrices of the FE problem
-tic;
-
 for ii=1:length(matrix_names)
     nrows = 0;
     ncolums = 0;
@@ -57,7 +49,7 @@ for ii=1:length(matrix_names)
     matrix_data = matrix_data.data;
     listLHS{ii} = sparse([matrix_data(:,1);nrows-1]+1,[matrix_data(:,2);ncolums-1]+1,[matrix_data(:,3);0]);
 end
-toc;
+
 % Nodes
 Nodes = load(strcat(mesh.file,'/',"Nodes.txt"));
 ndof = size(Nodes,1);
@@ -68,7 +60,13 @@ ndof = size(Nodes,1);
 
 FEmatrices.Nodes = Nodes; 
 FEmatrices = build_global(FEmatrices,listLHS,param,mesh.file);
-FEmatrices = build_BGField(FEmatrices, param);
+
+% RHS
+RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
+RHSdata = RHSdata.data;
+RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
+FEmatrices.RHS = RHS(FEmatrices.field);
+
 
 end
 
@@ -79,14 +77,17 @@ function FEmatrices = build_global(FEmatrices,listLHS,param,FILENAME)
 % if Problem1 is one problem to study, then create Problem1_pattern. Then
 % you need to compute it.
 
-FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME);
-
+FEmatrices = Platev2_pattern(FEmatrices,listLHS,param,FILENAME);
+%FEmatrices = Plate_pattern(FEmatrices,listLHS,param,FILENAME);
+%FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME);
+%FEmatrices = build_BGField(FEmatrices,param);
 end
 
 
 % this following function build the matrices of the system for the plate
 % case only. For each new case, we have to build a new function, a pattern
 % for partitionning the system.
+
 
 
 function FEmatrices = build_BGField(FEmatrices,param)
@@ -109,11 +110,11 @@ for ii=1:param.nfreq
     for jj=1:param.ntheta
         k = 2*pi*param.freq(ii)/param.c0;
         BG_Pressure_tmp = P0*exp(1i*k*(xbg*cos(param.theta(jj))+ybg*sin(param.theta(jj))));%propagation (+x,+y), convention exp(-1i*k*x)
-        FEmatrices.BG_pressure(Field_nodes,ii,jj) = BG_Pressure_tmp;
-        Z = FEmatrices.Hbg - (2*pi*param.freq(ii)/param.c0)^2*FEmatrices.Qbg;
+        %FEmatrices.BG_pressure(Field_nodes,ii,jj) = BG_Pressure_tmp;
+        %Z = FEmatrices.Hbg - (2*pi*param.freq(ii)/param.c0)^2*FEmatrices.Qbg;
         U_inc = zeros(FEmatrices.size_system,1);
-        U_inc(FEmatrices.indexfield) = -Z*BG_Pressure_tmp;
-        U_inc(FEmatrices.indexP_BGPML) = 0;
+        U_inc(FEmatrices.indexfield) = BG_Pressure_tmp;%U_inc(FEmatrices.indexfield) = -Z*BG_Pressure_tmp;
+        %U_inc(FEmatrices.indexP_BGPML) = 0;
         FEmatrices.RHS_BG(:,ii,jj) = U_inc;
     end
 end

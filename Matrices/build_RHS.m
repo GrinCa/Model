@@ -4,14 +4,19 @@ RHS_function = FEmatrices.RHScoeffderiv_fun{1,derivative_order(1),derivative_ord
 
 
 Coordinates = FEmatrices.Nodes(FEmatrices.field,find(param.direction));
+
+
 x1 = Coordinates(:,1);
 x2 = Coordinates(:,2);
 
-f_array = f*ones(size(FEmatrices.field,1),1);
-theta_array = theta*ones(size(FEmatrices.field,1),1);
+f_array = f*ones(length(FEmatrices.field),1);
+theta_array = theta*ones(length(FEmatrices.field),1);
 
 RHS = zeros(FEmatrices.size_system,1);
-Z = FEmatrices.Hbg - (2*pi*f/param.c0)^2*FEmatrices.Qbg;
-RHS(FEmatrices.indexfield) = -Z*RHS_function(f_array,theta_array,x1,x2);
-RHS(FEmatrices.indexP_BGPML) = 0;
+% Z = FEmatrices.Hbg - (2*pi*f/param.c0)^2*FEmatrices.Qbg;
+RHStmp = RHS_function(f_array,theta_array,x1,x2);
+RHS(FEmatrices.indexfield) = 2*RHStmp.*FEmatrices.RHS;
+% RHS(FEmatrices.indexfield) = -Z*RHS_function(f_array,theta_array,x1,x2);
+% RHS(FEmatrices.indexP_BGPML) = 0;
+disp("Build_RHS MODIF !!");
 end
