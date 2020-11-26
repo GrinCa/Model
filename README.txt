@@ -4,7 +4,7 @@
 In case you only want the source code, please go to https://github.com/GrinCa/Univariate 
 and clone the repository with git:
 
-git clone https://github.com/GrinCa/Univariate
+git clone https://github.com/GrinCa/Model_scattering
 
 Do not hesitate to contact me (Julien Ecobichon) for any questions, I would be happy to 
 help you (Matlab/Gmsh/FreeFem++):
