@@ -51,7 +51,7 @@ end
 
 filID = fopen('Derivatives/get_coeff_deriv_matrices.m','w');
 
-fprintf(filID,"function [coeff_deriv_fun,RHScoeffderiv] = get_coeff_deriv_matrices()");
+fprintf(filID,"function [coeff_deriv_fun,RHScoeffderiv] = get_coeff_deriv_matrices()\n");
 
 chartmp = '';
 for ii=1:length(derivative_orders)

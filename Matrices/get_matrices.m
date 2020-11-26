@@ -62,10 +62,10 @@ FEmatrices.Nodes = Nodes;
 FEmatrices = build_global(FEmatrices,listLHS,param,mesh.file);
 
 % RHS
-RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
-RHSdata = RHSdata.data;
-RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
-FEmatrices.RHS = RHS(FEmatrices.field);
+% RHSdata = importdata(strcat(mesh.file,'/',"RHS.txt")," ",3);
+% RHSdata = RHSdata.data;
+% RHS = diag(sparse(RHSdata(:,1)+1,RHSdata(:,2)+1,RHSdata(:,3)));
+% FEmatrices.RHS = RHS(FEmatrices.field);
 
 
 end
@@ -77,7 +77,7 @@ function FEmatrices = build_global(FEmatrices,listLHS,param,FILENAME)
 % if Problem1 is one problem to study, then create Problem1_pattern. Then
 % you need to compute it.
 
-FEmatrices = Platev2_pattern(FEmatrices,listLHS,param,FILENAME);
+FEmatrices = Modelv3_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = Plate_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = build_BGField(FEmatrices,param);

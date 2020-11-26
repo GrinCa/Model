@@ -4,6 +4,7 @@
 %                             March 2020                                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 %--------------------------------------------------------------------------
 % Init main program
 %--------------------------------------------------------------------------
@@ -16,22 +17,20 @@ warning('off', 'MATLAB:nearlySingularMatrix');
 %--------------------------------------------------------------------------
 
 % Add folders for Mumps, WCAWE, and Mesh functions/files
-global Meshfold WCAWEfold Mumps DataMap Derivatives
+global Meshfold WCAWEfold Mumps DataMap Derivatives STL
 Meshfold = 'Matrices';
 WCAWEfold = 'WCAWE';
 Mumps = 'Mumps';
 DataMap = 'DataMap';
 Derivatives = 'Derivatives';
-
-
+STL = 'STL';
 
 addpath(genpath(strcat(pwd,'/',Meshfold)));
 addpath(genpath(strcat(pwd,'/',WCAWEfold)));
 addpath(genpath(strcat(pwd,'/',Mumps)));
 addpath(genpath(strcat(pwd,'/',DataMap)));
 addpath(genpath(strcat(pwd,'/',Derivatives)));
-
-
+addpath(genpath(strcat(pwd,'/',STL)));
 
 
 %--------------------------------------------------------------------------
@@ -40,22 +39,28 @@ addpath(genpath(strcat(pwd,'/',Derivatives)));
 
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
-flag.recalculated = 1; % allow WCAWE and/or FE recalculation
-flag.calculateFE = 1;  % calculate FE solution
+flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
+                       % next three flag won't be considered.
+flag.calculateFE = 1;  % calculate FE solution, 
 flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
+flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 
-flag.converge = 0;
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
+flag.converge = 0; % this is to post process convergence test, not to perform
+                   % one
 flag.plotMQP = 0;
 flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
 
-flag.getmatrices = 1;
+
+flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
+% useful if you just post-process the results. Indeed, depending on the
+% model, it can be quite long to read the .txt file that contains the
+% matrices
 
 if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL || flag.converge_sizemesh || flag.normalized_error
     flag.getmatrices = 0;
@@ -64,9 +69,8 @@ if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL || flag
 end
 
 
-
 % Input files for mesh and FE matrices
-mesh.file = 'Platev2';
+mesh.file = 'Modelv3';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 
@@ -85,23 +89,25 @@ param.c0 = 340;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 600;
-param.fmax = 600;
+param.fmin = 100;
+param.fmax = 100;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
 % Angle range
-param.thetamin = 0;
-param.thetamax = 0;
+param.thetamin = pi/4;
+param.thetamax = pi/4;
 param.theta_range = [param.thetamin param.thetamax];
 param.thetaincr = 0.05;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
 param.ntheta = length(param.theta);
 
 P0 = 1;
-param.direction = [1;1;0];
+param.direction = [1;0;1];
+param.direction_coeff = param.direction(find(param.direction));
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,7 +116,7 @@ param.direction = [1;1;0];
 param.freqref = [400];
 param.nfreqref = length(param.freqref);
 
-param.thetaref = [0];
+param.thetaref = [pi/4];
 param.nthetaref = length(param.thetaref);
 
 % interval_construct enables us to build sub basis for WCAWE by
@@ -125,13 +131,13 @@ param.interval_construct = {{[1]};
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 30;
-param.nvecfreqmax = 30;
+param.nvecfreqmin = 2;
+param.nvecfreqmax = 2;
 param.incrvecfreq = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
 
-param.nvecthetamin = 10;
-param.nvecthetamax = 10;
+param.nvecthetamin = 2;
+param.nvecthetamax = 2;
 param.incrvectheta = 20;
 param.vecthetarange = param.nvecthetamin : param.incrvectheta : param.nvecthetamax;
 
@@ -146,7 +152,8 @@ param.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definition of the matrices coeffiscients
 coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0*exp(1i*(2*pi*f/param.c0).*(x1.*cos(theta)+x2.*sin(theta)));
+coeff_RHS = @(f,theta,x1,x2) P0*exp(1i*(2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
+                                                           param.direction_coeff(2)*x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
@@ -165,18 +172,11 @@ param = build_interval(param);
 %--------------------------------------------------------------------------
 if flag.getmatrices
     matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
-                    "Hr.txt","Hi.txt",...
-                    "Qr.txt","Qi.txt",...
-                    "C1.txt","C2.txt"];
+                    "Hbg.txt","Qbg.txt",...
+                    "Hpmlr.txt","Hpmli.txt",...
+                    "Qpmlr.txt","Qpmli.txt",...
+                    "C.txt"];
                 
-%     matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
-%                     "Hbg.txt","Qbg.txt",...
-%                     "Hcavr.txt","Qcavr.txt",...
-%                     "Hcavi.txt","Qcavi.txt",...
-%                     "Hpmlr.txt","Hpmli.txt",...
-%                     "Qpmlr.txt","Qpmli.txt",...
-%                     "C1.txt","C2.txt"];
-
                 
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
     Nodes = FEmatrices.Nodes;
@@ -196,6 +196,8 @@ if flag.recalculated
     %--------------------------------------------------------------------------
     
     [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
+    
+    BG_field = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
 
     if flag.calculateFE == 1
        disp('**************************');
@@ -217,9 +219,8 @@ if flag.recalculated
                for kk = 1:nLHS
                   Aglob = Aglob + coeff_LHS{kk}(param.freq(ii))*LHS{kk};
                end
-
                id.JOB = 5;
-               id.RHS = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
+               [id.RHS,BG_field(FEmatrices.field,ii,jj)] = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
                SOLFE(:,ii,jj) = resp_P;
@@ -230,7 +231,7 @@ if flag.recalculated
        timing.FE = cputime-t_FE;
     end
 
-
+    %TL = get_STL(FEmatrices,param,SOLFE);
 
     %--------------------------------------------------------------------------
     % Calculate WCAWE parametric sweep
@@ -325,111 +326,6 @@ if flag.recalculated
             end
        end
     end
-% if flag.calculateMDWCAWE || flag.calculateWCAWE
-%     
-% for nvecfreq=param.vecfreqrange
-%     for nvectheta=param.vecthetarange
-%         %%%%%
-%         param.nvecfreq = nvecfreq;
-%         param.nvectheta = nvectheta;
-%         %%%%%
-%         [LHScoeffderiv_fun,RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
-%         FEmatrices.LHScoeffderiv_fun = LHScoeffderiv_fun;
-%         FEmatrices.RHScoeffderiv_fun = RHScoeffderiv_fun;
-%         [LHScoeffderiv,RHSderiv] = fill_array_WCAWE(FEmatrices,param);
-%         
-%         if flag.calculateMDWCAWE
-%         %-----------------------------------------------------------------------
-%         %MDWCAWE Basis Julien
-%         %-----------------------------------------------------------------------
-%         disp('****************************************');
-%         disp('* Compute calculation of MDWCAWE basis *');
-%         disp('****************************************');
-%         t_MDWCAWE = cputime;
-%         MDWCAWE = [];
-%         for n=1:param.nfreqref
-%             for m=1:param.nthetaref
-%                 MDWCAWEtmp = MDWCAWE_basis(LHS,LHScoeffderiv{n,m},RHSderiv{n,m},nvecfreq,nvectheta);
-%                 MDWCAWE = [MDWCAWE MDWCAWEtmp];
-%             end
-%         end
-%         [uu,vv,ww] = svd(MDWCAWE,0);
-%         iiselect = find(diag(vv)>vv(1,1)*1e-15);
-%         MDWCAWEsvd = uu(:,iiselect);
-%         nsvd = size(MDWCAWEsvd,2);
-%         output = sprintf("[MDWCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(MDWCAWE,2));
-%         disp(output);
-%         disp('**** Compute MDWCAWE projection ****');
-%         SOLMDWCAWE = Solve(FEmatrices,MDWCAWEsvd,param);
-%         disp('**** MDWCAWE projection done ****');
-%         timing.MDWCAWE = cputime-t_MDWCAWE;
-%         end
-%         %-----------------------------------------------------------------------
-%         %WCAWE Basis Romain
-%         %-----------------------------------------------------------------------
-%         if flag.calculateWCAWE
-%             disp('**************************************');
-%             disp('* Compute calculation of WCAWE basis *');
-%             disp('**************************************');
-%             t_WCAWE = cputime;
-%             % Setup list of derivative coefficients and RHS derivatives
-%             WCAWE = [];
-%             Wtranstmp_order = param.nvecfreq+param.nvectheta-1;
-%             for n=1:param.nfreqref
-%                 for m=1:param.nthetaref
-%                     LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
-%                     RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
-%                     counter = 1;
-%                     for ii = 1:nvecfreq
-%                         if ii<nvecfreq
-%                             LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,1);
-%                             RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,1);
-%                             counter = counter+1;
-%                         elseif ii==nvecfreq
-%                             for jj = 1:nvectheta
-%                                LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
-%                                RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
-%                                counter = counter+1;
-%                             end % jj
-%                         end
-%                     end % ii
-%                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-%                     WCAWE = [WCAWE WCAWEtmp];
-%                     
-%                     LHScoeffderivtmp = zeros(nLHS,Wtranstmp_order);
-%                     RHSderivtmp = zeros(FEmatrices.size_system,Wtranstmp_order);
-%                     counter = 1;
-%                     for jj = 1:nvectheta
-%                         if jj<nvectheta
-%                             LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,1,jj);
-%                             RHSderivtmp(:,counter) = RHSderiv{n,m}(:,1,jj);
-%                             counter = counter+1;
-%                         elseif jj==nvectheta
-%                             for ii = 1:nvecfreq
-%                                LHScoeffderivtmp(:,counter) = LHScoeffderiv{n,m}(:,ii,jj);
-%                                RHSderivtmp(:,counter) = RHSderiv{n,m}(:,ii,jj);
-%                                counter = counter+1;
-%                             end % ii
-%                         end
-%                     end % jj
-%                     WCAWEtmp = WCAWE_basis(FEmatrices,LHScoeffderivtmp,RHSderivtmp,Wtranstmp_order);
-%                     WCAWE = [WCAWE WCAWEtmp(:,2:end-1)];
-%                 end
-%             end
-%             [uu,vv,ww] = svd(WCAWE,0);
-%             iiselect = find(diag(vv)>vv(1,1)*1e-15);
-%             WCAWEsvd = uu(:,iiselect);
-%             nsvd = size(WCAWEsvd,2);
-%             output = sprintf("[WCAWE:INFO][SVD] Number of selected vectors %d/%d\n",nsvd,size(WCAWE,2));
-%             disp(output);
-%             disp('**** Compute WCAWE projection ****');
-%             SOLWCAWE = Solve(FEmatrices,WCAWEsvd,param);
-%             disp('**** WCAWE projection done ****');
-%             timing.WCAWE = cputime-t_WCAWE;
-%         end
-%     end
-% end
-% end
 
     %--------------------------------------------------------------------------
     % Saves
@@ -562,17 +458,20 @@ if flag.convert2VTK
 %                      Force_vector,...
 %                      'FORCE_VECTOR'};
 
-     PARTITION = cell(2);
+     PARTITION = cell(2,1);
      PARTITION{1} = {'scalar',...
-                     FEmatrices.indexP,...
-                     FEmatrices.acoustic_nodes,...
+                     FEmatrices.indexSIS,...
+                     FEmatrices.SIS,...
                     'PRESSURE'};
      PARTITION{2} = {'vector',...
                     [FEmatrices.indexu1;...
                      FEmatrices.indexu2;...
                      FEmatrices.indexu3],...
-                     FEmatrices.elastic_nodes,...
+                     FEmatrices.plate_nodes,...
                      'DISPLACEMENT'};
+     PARTITION{3} = {'data',...
+                     BG_field(:,1,1),...
+                    'BG_pressure'};
                               
 
     %%%
