@@ -1,4 +1,4 @@
-function convertGEO2VTK(FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
+function convertGEO2VTK(kind,FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
 
 %##########################################################################
 %Please read the following lines for further informations
@@ -31,12 +31,19 @@ function convertGEO2VTK(FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
 % store .vtk files
 FILENAME = mesh.file;
 connectivity_table = load(['Matrices/',FILENAME,'/connectivity_table.txt']);
-connectivity_table = connectivity_table(:,[1 2 3 4 5 8 6 7 9 10]);
-text_field = get_text_field(FEmatrices.Nodes,connectivity_table,FILENAME);
-convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
 
+if strcmp(kind,'linear')
+    linear_data = {4, 10};
+    text_field = get_text_field(linear_data,FEmatrices.Nodes,connectivity_table,FILENAME);
+    convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
+elseif strcmp(kind,'quadratic')
+    quadratic_data = {10, 24};
+    connectivity_table = connectivity_table(:,[1 2 3 4 5 8 6 7 9 10]);%reordering tetrahedron
+    text_field = get_text_field(quadratic_data,FEmatrices.Nodes,connectivity_table,FILENAME);
+    convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
 end
 
+end
 
 function convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
 % -This function create as much .vtk file as we have frequencies.
@@ -81,7 +88,7 @@ end
 end
 
 
-function text_field = get_text_field(Nodes,connectivity_table,FILENAME)
+function text_field = get_text_field(specific_data,Nodes,connectivity_table,FILENAME)
 ndof = size(Nodes,1);
 text_field = [];
 % -text field contains all the text data that every .vtk file needs,
@@ -100,19 +107,21 @@ for ii=1:ndof
                               num2str(Nodes(ii,3)),'\n']];
 end
 
-disp('*** Initialize conversion 3D ***');
+disp('*** Initialize conversion 3D (linear elements)***');
 text_field = [text_field ['CELLS ',num2str(size(connectivity_table,1)),' ',...
-                                   num2str(11*size(connectivity_table,1)),'\n']];
+                                   num2str((specific_data{1}+1)*size(connectivity_table,1)),'\n']];
 for ii=1:size(connectivity_table,1)
-    text_field = [text_field ['10 ',num2str(connectivity_table(ii,:))],'\n'];
+    text_field = [text_field [[num2str(specific_data{1}) ' '], num2str(connectivity_table(ii,:))],'\n'];
 end 
 text_field = [text_field ['CELL_TYPES ',num2str(size(connectivity_table,1)),'\n']];
 for ii=1:size(connectivity_table,1)
-    text_field = [text_field '24\n'];
+    text_field = [text_field [num2str(specific_data{2}) '\n']];
 end
 
 
 end
+
+
 
 function text_data = convert_vector(FEmatrices,text_data,SOLUTION,index,local_nodes,global_nodes,component_name)
 
@@ -137,6 +146,7 @@ end
 
 
 end
+
 
 function text_data = convert_scalar(FEmatrices,text_data,SOLUTION,index,local_nodes,global_nodes,component_name)
 

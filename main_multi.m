@@ -38,15 +38,15 @@ addpath(genpath(strcat(pwd,'/',STL)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 1; % to recalculate FreeFem++ matrices
+flag.rerun = 0; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flag won't be considered.
-flag.calculateFE = 1;  % calculate FE solution, 
-flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
+flag.calculateFE = 0;  % calculate FE solution, 
+flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
@@ -70,7 +70,7 @@ end
 
 
 % Input files for mesh and FE matrices
-mesh.file = 'Modelv3';
+mesh.file = 'Modelv4';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 
@@ -85,20 +85,20 @@ timing.FE = 0;
 param.rho = 1.2;
 param.rhoS = 1200;
 param.c0 = 340;
-
+param.eta = 5e-2;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 100;
-param.fmax = 100;
+param.fmin = 10;
+param.fmax = 120;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 2; % 20
+param.freqincr = 1; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
 % Angle range
-param.thetamin = pi/4;
-param.thetamax = pi/4;
+param.thetamin = 0;
+param.thetamax = 0;
 param.theta_range = [param.thetamin param.thetamax];
 param.thetaincr = 0.05;
 param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
@@ -113,10 +113,10 @@ param.direction_coeff = param.direction(find(param.direction));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [400];
+param.freqref = [65];
 param.nfreqref = length(param.freqref);
 
-param.thetaref = [pi/4];
+param.thetaref = [0];
 param.nthetaref = length(param.thetaref);
 
 % interval_construct enables us to build sub basis for WCAWE by
@@ -131,13 +131,13 @@ param.interval_construct = {{[1]};
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 2;
-param.nvecfreqmax = 2;
+param.nvecfreqmin = 3;
+param.nvecfreqmax = 3;
 param.incrvecfreq = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
 
-param.nvecthetamin = 2;
-param.nvecthetamax = 2;
+param.nvecthetamin = 1;
+param.nvecthetamax = 1;
 param.incrvectheta = 20;
 param.vecthetarange = param.nvecthetamin : param.incrvectheta : param.nvecthetamax;
 
@@ -150,10 +150,10 @@ param.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['.
                 replace(num2str(param.freqref),' ','_') '][' replace(num2str(param.thetaref),' ','_') ']'];
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Definition of the matrices coeffiscients
-coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0*exp(1i*(2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
-                                                           param.direction_coeff(2)*x2.*sin(theta)));
+% Definition of the matrices coeffs
+coeff_LHS = {@(f,theta) 1+1i*param.eta,@(f,theta) -(2*pi*f)^2};
+coeff_RHS = @(f,theta,x1,x2) P0*cos((2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
+                                                        param.direction_coeff(2)*x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
@@ -171,13 +171,7 @@ param = build_interval(param);
 % Matrices calculated with Freefem++
 %--------------------------------------------------------------------------
 if flag.getmatrices
-    matrix_names = ["K.txt","M.txt",... % matrices defined on the incident domain
-                    "Hbg.txt","Qbg.txt",...
-                    "Hpmlr.txt","Hpmli.txt",...
-                    "Qpmlr.txt","Qpmli.txt",...
-                    "C.txt"];
-                
-                
+    matrix_names = ["K.txt","M.txt","C.txt"]; % matrices defined on the incident domain     
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
     Nodes = FEmatrices.Nodes;
     LHS = FEmatrices.LHS;
@@ -187,7 +181,9 @@ if flag.getmatrices
     save(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
 end
 
-
+%-----------------------------------------------------------------------------------------
+[FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
+%-----------------------------------------------------------------------------------------
 
 if flag.recalculated
 
@@ -196,7 +192,6 @@ if flag.recalculated
     %--------------------------------------------------------------------------
     
     [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
-    
     BG_field = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
 
     if flag.calculateFE == 1
@@ -220,7 +215,8 @@ if flag.recalculated
                   Aglob = Aglob + coeff_LHS{kk}(param.freq(ii))*LHS{kk};
                end
                id.JOB = 5;
-               [id.RHS,BG_field(FEmatrices.field,ii,jj)] = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
+               %[id.RHS,BG_field(FEmatrices.field,ii,jj)] = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
+               id.RHS = fe_asm(FEmatrices,param,param.freq(ii),param.theta(jj),[1 1]);
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
                SOLFE(:,ii,jj) = resp_P;
@@ -231,7 +227,7 @@ if flag.recalculated
        timing.FE = cputime-t_FE;
     end
 
-    %TL = get_STL(FEmatrices,param,SOLFE);
+   
 
     %--------------------------------------------------------------------------
     % Calculate WCAWE parametric sweep
@@ -270,7 +266,7 @@ if flag.recalculated
                 param.nvecfreq = nvecfreq;
                 param.nvectheta = nvectheta;
                 %%%%%
-                [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices([nvecfreq,nvectheta],nLHS);
+                [FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
                 [FEmatrices.LHScoeffderiv, FEmatrices.RHSderiv] = fill_array_WCAWE(FEmatrices,param);
 
                 %-----------------------------------------------------------------------
@@ -280,7 +276,6 @@ if flag.recalculated
                     disp('****************************************');
                     disp('* Compute calculation of MDWCAWE basis *');
                     disp('****************************************');
-                    t_MDWCAWE = tic;
                     arg.algo = 'MDWCAWE';
                     SOLMDWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
 
@@ -295,7 +290,6 @@ if flag.recalculated
                             disp('**** MDWCAWE projection done ****');
                         end
                     end
-                    timing.MDWCAWE = toc;
                 end
 
                 %-----------------------------------------------------------------------
@@ -362,6 +356,7 @@ end
 % Post processing
 %--------------------------------------------------------------------------
 
+%show_surface(FEmatrices,param,SOLFE,FEmatrices.PlateExt,[1 2],3);
 
 if flag.converge
     clear FEmatrices SOLFE SOLMDWCAWE;
@@ -458,20 +453,19 @@ if flag.convert2VTK
 %                      Force_vector,...
 %                      'FORCE_VECTOR'};
 
-     PARTITION = cell(2,1);
-     PARTITION{1} = {'scalar',...
-                     FEmatrices.indexSIS,...
-                     FEmatrices.SIS,...
-                    'PRESSURE'};
-     PARTITION{2} = {'vector',...
+%      PARTITION{1} = {'scalar',...
+%                      FEmatrices.indexSIS,...
+%                      FEmatrices.SIS,...
+%                     'PRESSURE'};
+     PARTITION{1} = {'vector',...
                     [FEmatrices.indexu1;...
                      FEmatrices.indexu2;...
                      FEmatrices.indexu3],...
                      FEmatrices.plate_nodes,...
                      'DISPLACEMENT'};
-     PARTITION{3} = {'data',...
-                     BG_field(:,1,1),...
-                    'BG_pressure'};
+%      PARTITION{3} = {'data',...
+%                      BG_field(:,1,1),...
+%                     'BG_pressure'};
                               
 
     %%%
@@ -485,9 +479,12 @@ if flag.convert2VTK
 %                         post_process(FEmatrices,param,arg,SOLFE),...
 %                         'Total_pressure'};
         
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
+        convertGEO2VTK('linear',FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
     end
 end
+
+TL = get_STL(FEmatrices,param,SOLMDWCAWE);
+% plot(param.freq,TL);
 
 if flag.calculateTL
     clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;

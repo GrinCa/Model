@@ -1,5 +1,6 @@
 function [RHS,BG_field] = build_RHS(f,theta,FEmatrices,derivative_order,param)
 
+
 RHS_function = FEmatrices.RHScoeffderiv_fun{1,derivative_order(1),derivative_order(2)};
 
 

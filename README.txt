@@ -4,7 +4,7 @@
 In case you only want the source code, please go to https://github.com/GrinCa/Univariate 
 and clone the repository with git:
 
-git clone https://github.com/GrinCa/Univariate
+git clone https://github.com/GrinCa/Model_scattering
 
 Do not hesitate to contact me (Julien Ecobichon) for any questions, I would be happy to 
 help you (Matlab/Gmsh/FreeFem++):
@@ -48,11 +48,8 @@ any guarantee! Note that A doesn't depend of p2, because of one of the two algor
 implemented. In case you need to solve a system with A(p1,p2), you must only solve with
 the WCAWE algo and not the one called MDWCAWE.
 
-This program implements the Univariate algorithm developped by Slone & al.(see 
-https://www.researchgate.net/publication/3017281_Well-conditioned_asymptotic_
-waveform_evaluation_for_finite_elements). 
 
-Source code of the Slone algorithm is located under the WCAWE folder (WCAWE_basis.m).
+Source code of the two algorithms are located in the WCAWE folder (WCAWE_basis.m).
 
 
 The numerical parameters of the study must be entered in the main_multi.m file. 
@@ -89,6 +86,7 @@ Derivatives, which has been detailed in particular the recursion aspects.
 If you need to create a new model (Gmsh-FreeFem++), I strongly advise you to compile and
 debug your .edp file (FreeFem++). Once you have a good model, you can perform sweeps and 
 pay attention to the Matlab interface.
+
 
 
 

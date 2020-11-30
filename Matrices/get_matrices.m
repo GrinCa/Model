@@ -77,7 +77,7 @@ function FEmatrices = build_global(FEmatrices,listLHS,param,FILENAME)
 % if Problem1 is one problem to study, then create Problem1_pattern. Then
 % you need to compute it.
 
-FEmatrices = Modelv3_pattern(FEmatrices,listLHS,param,FILENAME);
+FEmatrices = Modelv4_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = Plate_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME);
 %FEmatrices = build_BGField(FEmatrices,param);

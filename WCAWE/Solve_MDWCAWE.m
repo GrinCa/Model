@@ -23,7 +23,7 @@ for ii=1:length(interval_freq)
          Aglob_red = Aglob_red + FEmatrices.LHScoeffderiv_fun{kk,1,1}(interval_freq(ii),interval_theta(jj))*LHS_red{kk};
       end %kk
       %%% Calculation of RHS @ (f,theta) %%%
-      RHS = build_RHS(interval_freq(ii),interval_theta(jj),FEmatrices,[1,1],param);
+      RHS = fe_asm(FEmatrices,param,param.freq(ii),param.theta(jj),[1 1]);
       RHS = sparse(MDWCAWE'*RHS(:));
       solp = Aglob_red\RHS;
       resp_P = MDWCAWE*solp;
