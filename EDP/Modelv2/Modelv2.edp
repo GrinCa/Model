@@ -10,14 +10,14 @@ load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
 //includes
-include "/home/julien/Documents/FreeFem_routines/exports.idp"
+include "../exports.idp"
 
 
-string root="Matrices/Modelv2/"; // Matrices/Plate/
+string root="../../Matrices/Modelv2/";
 
 
 //load the mesh from the Gmsh file
-mesh3 Th = gmshload3("Modelv2.msh");
+mesh3 Th = gmshload3("../../Mesh/Modelv2/Modelv2.msh");
 
 //region
 int cavity = 1;
@@ -50,7 +50,7 @@ real nu = 0.3;
 real mu = E/(2*(1+nu));
 real lambda = E*nu/((1+nu)*(1-2*nu));
 
-
+real rhoS = 1200;
 
 real sqrt2=sqrt(2.0);
 
@@ -128,7 +128,7 @@ varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v
 	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
 				                 on(embedding, u1=0, u2=0, u3=0);
 
-varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( [u1,u2,u3]'*[v1,v2,v3] );
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
 
 
 //Fluid

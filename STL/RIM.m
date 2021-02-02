@@ -12,24 +12,28 @@ rayleigh_matrices = cell(param.nfreq,1);
 %     hold on
 % end
 
+n_elem = length(element_data);
+
+u = ones(size(FEmatrices.Surf_matrix,1),1);
+Se = u'*FEmatrices.Surf_matrix*u / n_elem;
+
 disp("Start Rayleigh calculation");
 
 for n=1:param.nfreq
-    rayleigh_matrices{n} = zeros(length(element_data), length(element_data));
-    k = 2*pi*param.freq(n)/param.c0;
-    disp(["Rayleigh Matrix [f=",num2str(param.freq(n))," Hz]"]);
-    for ii=1:length(element_data)
-        for jj=1:ii
-            if jj~=ii
-                rij = norm(element_center(ii,:) - element_center(jj,:));
-                rayleigh_matrices{n}(ii,jj) = sin(k*rij)/k/rij;
-            else
-                rij = 1;
-                rayleigh_matrices{n}(ii,jj) = sin(k*rij)/k/rij;
-            end
+    rayleigh_matrices{n} = zeros(n_elem, n_elem);
+    omega = 2*pi*param.freq(n);
+    k = omega/param.c0;
+    coeff = Se^2*omega^2*param.rho0 / (4*pi*param.c0);
+    disp(['Rayleigh Matrix [f = ',num2str(param.freq(n)),' Hz]']);
+    for ii=1:n_elem
+        for jj=1:(ii-1)
+            rij = norm(element_center(ii,:) - element_center(jj,:));
+            rayleigh_matrices{n}(ii,jj) = sin(k*rij)/k/rij;
         end
     end
-    rayleigh_matrices{n} = rayleigh_matrices{n} + rayleigh_matrices{n}' - diag(rayleigh_matrices{n});
+    rayleigh_matrices{n} = coeff * ( rayleigh_matrices{n} + ...
+                                     rayleigh_matrices{n}'+ ...
+                                     eye(size(rayleigh_matrices{n},1)) );
 end
 
 end

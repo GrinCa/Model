@@ -1,4 +1,4 @@
-function FEmatrices = Model_pattern(FEmatrices,listLHS,param,FILENAME)
+function FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME)
 
 ndof = size(FEmatrices.Nodes,1);
 % regions

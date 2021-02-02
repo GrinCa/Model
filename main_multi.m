@@ -9,8 +9,9 @@
 % Init main program
 %--------------------------------------------------------------------------
 
-%clear FEmatrices param flag;
-warning('off', 'MATLAB:nearlySingularMatrix');
+
+% clear FEmatrices param flag;
+% warning('off', 'MATLAB:nearlySingularMatrix');
 
 %--------------------------------------------------------------------------
 % Folders
@@ -38,7 +39,7 @@ addpath(genpath(strcat(pwd,'/',STL)));
 %--------------------------------------------------------------------------
 
 % Input parameters for Matlab calculation
-flag.rerun = 0; % to recalculate FreeFem++ matrices
+flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flag won't be considered.
 flag.calculateFE = 0;  % calculate FE solution, 
@@ -82,17 +83,16 @@ timing.FE = 0;
 
 
 % Material parameters
-param.rho = 1.2;
-param.rhoS = 1200;
-param.c0 = 340;
+param.c0 = 340; %m/s
+param.rho0 = 1.29; %kg/m3
 param.eta = 5e-2;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 10;
-param.fmax = 120;
+param.fmin = 50;
+param.fmax = 400;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 1; % 20
+param.freqincr = 8; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -483,8 +483,8 @@ if flag.convert2VTK
     end
 end
 
-TL = get_STL(FEmatrices,param,SOLMDWCAWE);
-% plot(param.freq,TL);
+TL = get_STL(FEmatrices,param,SOLFE);
+plot(param.freq,TL);
 
 if flag.calculateTL
     clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;

@@ -1,0 +1,182 @@
+//--------------------------------------------------------------------------
+// Load libraries and mesh
+//--------------------------------------------------------------------------
+
+load "msh3" // for buildlayers function
+load "gmsh" // for loading gmsh meshes
+
+string root="../../Matrices/Debug/";
+mesh3 Th = gmshload3("../../Mesh/Debug/Debug.msh");
+
+int cavity = 1;
+int plate = 2;
+int embedding = 3;
+int coupling = 4;
+int pressure = 5;
+
+//--------------------------------------------------------------------------
+// Define variables, functions, and macros
+//--------------------------------------------------------------------------
+
+real E = 2e9;
+real nu = 0.3;
+real mu = E/(2*(1+nu));
+real lambda = E*nu/((1+nu)*(1-2*nu));
+
+
+real sqrt2=sqrt(2);
+
+macro Grad(p) [dx(p),dy(p),dz(p)] // EOM -- End Of Macro
+
+macro epsilon(u1,u2,u3)  [dx(u1),
+						  dy(u2),
+						  dz(u3),
+						  (dz(u2)+dy(u3))/sqrt2,
+						  (dz(u1)+dx(u3))/sqrt2,
+						  (dy(u1)+dx(u2))/sqrt2] // EOM -- End Of Macro
+
+macro div(u1,u2,u3) ( dx(u1)+dy(u2)+dz(u3) ) // EOM -- End Of Macro
+
+
+
+//--------------------------------------------------------------------------
+// Define finite element space, solid and fluid
+//--------------------------------------------------------------------------
+
+fespace VhS(Th,[P2,P2,P2]);
+VhS [u1,u2,u3], [v1,v2,v3];
+
+fespace VhF(Th,P2);
+VhF p,v;
+
+
+//--------------------------------------------------------------------------
+// Define varf
+//--------------------------------------------------------------------------
+
+//Plate
+varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	     			   2*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
+				 				 on(embedding, u1=0, u2=0, u3=0);
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( [u1,u2,u3]'*[v1,v2,v3] );
+
+
+//Cavity
+varf h(p, v) = int3d(Th, cavity)( Grad(p)'*Grad(v) );
+varf q(p, v) = int3d(Th, cavity)( p*v );
+
+//Coupling
+varf c(p,v) = int2d(Th, coupling)( p*v );
+
+real P0 = 1;
+varf rhs(unused,v) = int2d(Th, pressure)(P0*v);
+
+
+//--------------------------------------------------------------------------
+// Define matrices
+//--------------------------------------------------------------------------
+
+//Solid
+matrix K = k(VhS, VhS);
+matrix M = m(VhS, VhS);
+//Fluid
+matrix H = h(VhF, VhF);
+matrix Q = q(VhF, VhF);
+//Coupling
+matrix C = c(VhF, VhF);
+
+//RHS
+real[int] rhstmp = rhs(0, VhF);
+matrix RHS = rhstmp;
+
+// nodes Export and coordinates
+VhF[int] vhn(3);
+vhn[0] = x;
+vhn[1] = y;
+vhn[2] = z;
+
+
+{
+  ofstream fout(root+"Nodes.txt");
+  for (int n = 0; n < VhF.ndof; n++)
+  {
+    for (int d = 0; d < 3; d++)
+      fout << "  " << vhn[d][][n]; // x, y, z
+    fout << endl;
+  }
+}
+
+{
+  ofstream fout(root+"labels.txt");
+  real xg = 0;
+  real yg = 0;
+  real zg = 0;
+  for (int i=0; i<Th.nt; i++){
+    xg = 0;
+    yg = 0;
+    zg = 0;
+    for (int j=0; j<VhF.ndofK; j++){
+       xg = xg + vhn[0][][VhF(i,j)];
+       yg = yg + vhn[1][][VhF(i,j)];
+       zg = zg + vhn[2][][VhF(i,j)];
+    }
+    real nuRegion = Th(xg/VhF.ndofK,yg/VhF.ndofK,zg/VhF.ndofK).region;
+    for (int j=0; j<VhF.ndofK; j++){
+       real nuNode = VhF(i,j);
+       fout << nuNode << "\t" << nuRegion << endl;
+    }
+  }
+}
+
+{
+  ofstream fout(root+"test.txt");
+  for(int i=0;i<Th.nbe;i++){
+  	//for(int k=0;k<3;k++){
+  	//	fout << Th.be(i)[k] << " ";
+  	//}
+  	fout << Th.be(i).label << endl;
+  	//fout << endl;
+  }
+}
+
+
+{
+  ofstream fout(root+"connectivity_table.txt");
+  for (int i=0; i<Th.nt; i++){
+    for (int j=0; j<VhF.ndofK; j++){
+      fout << VhF(i,j) << " ";
+    }
+    fout << endl;
+  }
+}
+
+
+
+
+
+{
+ofstream fout(root+"K.txt");
+fout<< K <<endl;
+}
+{
+ofstream fout(root+"M.txt");
+fout<< M <<endl;
+}
+{
+ofstream fout(root+"H.txt");
+fout<< H <<endl;
+}
+{
+ofstream fout(root+"Q.txt");
+fout<< Q <<endl;
+}
+{
+ofstream fout(root+"C.txt");
+fout<< C <<endl;
+}
+{
+ofstream fout(root+"RHS.txt");
+fout<< RHS <<endl;
+}
+
+

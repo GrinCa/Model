@@ -2,20 +2,21 @@
 // Load libraries and mesh
 //--------------------------------------------------------------------------
 
+//
+
 load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
-include "/home/julien/Documents/FreeFem_routines/exports.idp"
+include "../exports.idp"
 
-string root="Matrices/Plate/"; // Matrices/Plate/
-mesh3 Th = gmshload3("Plate.msh");
+string root="../../Matrices/Platev1/";
+mesh3 Th = gmshload3("../../Mesh/Platev1.msh");
 
 int acoustic = 1;
 int elastic = 2;
 int embedding = 3;
 int coupling = 4;
 int extpressure = 5;
-int PML = 6;
 
 int[int] boundaryLabel(3);
 
@@ -108,8 +109,8 @@ varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, elastic)( rhoS*[u1,u2,u3]'*[v1,v2,v3]
 
 //Cavity
 
-varf hr(p, v) = int3d(Th, acoustic, PML)( Grad(p)'*Grad(v) );
-varf qr(p, v) = int3d(Th, acoustic, PML)( p*v );
+varf hr(p, v) = int3d(Th, acoustic)( Grad(p)'*Grad(v) );
+varf qr(p, v) = int3d(Th, acoustic)( p*v );
 
 /*
 varf hr(p, v) = int3d(Th, acoustic, PML)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +

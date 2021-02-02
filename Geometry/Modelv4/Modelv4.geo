@@ -1,25 +1,25 @@
 // Gmsh project created on Sun Nov 29 10:54:50 2020
 SetFactory("OpenCASCADE");
 
-plate_thickness=0.01;
-L=1.0;
-sizemesh = 0.1;
+plate_thickness=0.004;
+L=0.4;
+sizemesh = 0.02;
 
-Point(1) = {-L, -L, 0, sizemesh};
+Point(1) = {-L/2, -L/2, 0, sizemesh};
 //+
-Point(2) = {-L, L, 0, sizemesh};
+Point(2) = {-L/2, L/2, 0, sizemesh};
 //+
-Point(3) = {L, L, 0, sizemesh};
+Point(3) = {L/2, L/2, 0, sizemesh};
 //+
-Point(4) = {L, -L, 0, sizemesh};
+Point(4) = {L/2, -L/2, 0, sizemesh};
 //+
-Point(5) = {-L, -L, plate_thickness, sizemesh};
+Point(5) = {-L/2, -L/2, plate_thickness, sizemesh};
 //+
-Point(6) = {-L, L, plate_thickness, sizemesh};
+Point(6) = {-L/2, L/2, plate_thickness, sizemesh};
 //+
-Point(7) = {L, L, plate_thickness, sizemesh};
+Point(7) = {L/2, L/2, plate_thickness, sizemesh};
 //+
-Point(8) = {L, -L, plate_thickness, sizemesh};
+Point(8) = {L/2, -L/2, plate_thickness, sizemesh};
 
 
 //+
@@ -86,3 +86,4 @@ Physical Surface("extplate",3) = {2};
 Physical Surface("embedding",4) = {4, 5, 6, 3};
 //+
 Physical Volume("plate",1) = {1};
+

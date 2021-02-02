@@ -18,6 +18,17 @@ if exist(['Matrices/',Filename,'/',path1],'dir') == 0
     mkdir(path);
 end
 
+if exist(['Mesh/',Filename],'dir') == 0
+    path = ['Mesh/',Filename];
+    mkdir(path);
+end
+
+if exist(['EDP/',Filename],'dir') == 0
+    path = ['EDP/',Filename];
+    mkdir(path);
+end
+
+
 for ii=1:length(param.vecfreqrange)
     for jj=1:length(param.vecthetarange)
         if exist(['Matrices/',Filename,'/',path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_') ']/[',num2str(param.vecfreqrange(ii)),'_',num2str(param.vecthetarange(jj)),']'],'dir') == 0
@@ -32,7 +43,7 @@ end
 %--------------------------------------------------------------------------
 
 try
-    command = ['cp ','Geometry/',Filename,'/',Filename,'.msh',' ',Filename,'.msh'];
+    command = ['cp ','Geometry/',Filename,'/',Filename,'.msh',' ','Mesh/',Filename,'/',Filename,'.msh'];
     system(command);
 catch
     disp(['[genfolders] No .msh file in the folder : /Geometry/',Filename]);

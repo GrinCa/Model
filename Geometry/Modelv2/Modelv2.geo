@@ -1,7 +1,7 @@
 // Gmsh project created on Mon Apr 27 08:53:20 2020
 //+
 
-sizemesh = 0.2;
+sizemesh = 0.4;
 
 
 

@@ -1,0 +1,121 @@
+//--------------------------------------------------------------------------
+// Load libraries and mesh
+//--------------------------------------------------------------------------
+
+
+//verbosity = 10;
+
+//loads
+load "msh3" // for buildlayers function
+load "gmsh" // for loading gmsh meshes
+
+//includes
+include "../exports.idp"
+
+
+string root="../../Matrices/Modelv4/"; 
+
+
+//load the mesh from the Gmsh file
+mesh3 Th = gmshload3("../../Mesh/Modelv4/Modelv4.msh");
+
+//region
+int plate = 1;
+
+//label
+int inplate = 2;
+int extplate = 3;
+int embedding = 4;
+
+
+//boundary label
+int[int] boundaryLabel(3);
+boundaryLabel(0) = inplate;
+boundaryLabel(1) = extplate;
+boundaryLabel(2) = embedding;
+
+
+
+//--------------------------------------------------------------------------
+// Define variables, functions, and macros
+//--------------------------------------------------------------------------
+
+real E = 2e9;
+real nu = 0.37;
+real rhoS = 1200;
+
+real mu = E/(2*(1+nu));
+real lambda = E*nu/((1+nu)*(1-2*nu));
+
+real sqrt2=sqrt(2.0);
+
+macro epsilon(u1,u2,u3)  [dx(u1),
+						  dy(u2),
+						  dz(u3),
+						  (dz(u2)+dy(u3))/sqrt2,
+						  (dz(u1)+dx(u3))/sqrt2,
+						  (dy(u1)+dx(u2))/sqrt2] // EOM -- End Of Macro
+
+macro div(u1,u2,u3) ( dx(u1)+dy(u2)+dz(u3) ) // EOM -- End Of Macro
+
+//--------------------------------------------------------------------------
+// Define finite element space, solid and fluid
+//--------------------------------------------------------------------------
+
+fespace VhS(Th,[P1,P1,P1]);
+VhS [u1,u2,u3], [v1,v2,v3];
+
+fespace Vh(Th,P1);
+Vh u,v;
+
+//--------------------------------------------------------------------------
+// Define varf
+//--------------------------------------------------------------------------
+
+//Solid
+varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
+				                 on(embedding, u1=0, u2=0, u3=0);
+
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
+
+
+
+varf c(u, v) = int2d(Th, inplate)( u*v );
+
+
+//--------------------------------------------------------------------------
+// Define matrices
+//--------------------------------------------------------------------------
+
+//Solid
+matrix K = k(VhS, VhS);
+matrix M = m(VhS, VhS);
+matrix C = c(Vh,  Vh);
+
+//--------------------------------------------------------------------------
+// Export Data
+//--------------------------------------------------------------------------
+
+
+{
+	ofstream fout(root+"M.txt");
+	fout<< M <<endl;
+}
+{
+	ofstream fout(root+"K.txt");
+	fout<< K <<endl;
+}
+{
+	ofstream fout(root+"C.txt");
+	fout<< C <<endl;
+}
+
+saveRegionLabels(Vh, root+"regions.txt");
+saveBoundariesLabels(Vh, boundaryLabel, root+"labels.txt");
+saveNodes(Vh,root+"Nodes.txt");
+saveConnectivity(Th, Vh, root+"connectivity_table.txt");
+
+cout << Vh.ndofK << endl;
+
+

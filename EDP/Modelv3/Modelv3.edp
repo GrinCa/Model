@@ -10,33 +10,32 @@ load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
 //includes
-include "/home/julien/Documents/FreeFem_routines/exports.idp"
+include "../exports.idp"
 
 
-string root="Matrices/Model/"; // Matrices/Plate/
+string root="../../Matrices/Modelv3/"; // Matrices/Plate/
 
 
 //load the mesh from the Gmsh file
-mesh3 Th = gmshload3("Model.msh");
+mesh3 Th = gmshload3("../../Mesh/Modelv3/Modelv3.msh");
 
 //region
-int cavity = 1;
-int plate = 2;
-int background = 3;
-int PML = 4;
+int plate = 5;
+int BG = 6;
+int PML = 7;
 //label
-int PlateCavity = 5;
-int PlateBG = 6;
-int embedding = 7;
-int BGPML = 8;
+int embedding = 1;
+int extplate = 2;
+int inplate = 3;
+int BGPML = 4;
+
 
 
 //boundary label
 int[int] boundaryLabel(3);
-boundaryLabel(0) = PlateCavity;
-boundaryLabel(1) = PlateBG;
+boundaryLabel(0) = inplate;
+boundaryLabel(1) = extplate;
 boundaryLabel(2) = BGPML;
-
 
 
 
@@ -49,7 +48,7 @@ real nu = 0.3;
 real mu = E/(2*(1+nu));
 real lambda = E*nu/((1+nu)*(1-2*nu));
 
-
+real rhoS = 1200;
 
 real sqrt2=sqrt(2.0);
 
@@ -81,27 +80,27 @@ VhF p,v;
 //--------------------------------------------------------------------------
 
 
-real Lbg = 0.75;
-real lpml = 0.5;
+real Lbg = 2.0;
+real lpml = 1.0;
+real lplate = 1.0;
 
+real Lbg1x = lplate;//real L1x = 5.5;
+real Lbg2x = lplate+lpml;
+real Lbg1y = lplate;//real L1x = 5.5;
+real Lbg2y = lplate+lpml;
+real Lbg1z = Lbg;//real L1z = 3.0;
+real Lbg2z = Lbg+lpml;
 
-real L1x = 2*Lbg;//real L1x = 5.5;
-real L2x = 2*Lbg+lpml;
-real L1y = Lbg;//real L1y = 3.0;
-real L2y = Lbg+lpml;
-real L1z = Lbg;//real L1z = 3.0;
-real L2z = Lbg+lpml;
+real km=2.5;
+real sigma1 = 3.45;
+real sigma2 = 2.3;
 
-real km=5.54;
-real sigma = 1;
-
-func PML3x=sigma/(L2x-abs(x)) ;
-func decay3x=(region==PML) ? 1+1i*PML3x/km : 1 ;//
-func PML3y=sigma/(L2y-abs(y)) ;
-func decay3y=(region==PML) ? 1+1i*PML3y/km : 1 ;//
-func PML3z=sigma/(L2z-abs(z)) ;
-func decay3z=(region==PML) ? 1+1i*PML3z/km : 1 ;//
-
+func PML1x=sigma1/(Lbg2x-abs(x)) ;
+func decay1x=(region==PML) ? 1+1i*PML1x/km : 1 ;//
+func PML1y=sigma1/(Lbg2y-abs(y)) ;
+func decay1y=(region==PML) ? 1+1i*PML1y/km : 1 ;//
+func PML1z=sigma2/(Lbg2z-abs(z)) ;
+func decay1z=(region==PML) ? 1+1i*PML1z/km : 1 ;//
 
 
 
@@ -114,31 +113,26 @@ varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v
 	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
 				                 on(embedding, u1=0, u2=0, u3=0);
 
-varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( [u1,u2,u3]'*[v1,v2,v3] );
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
 
 
 //Fluid
-varf hpmlr(p, v) = int3d(Th, PML, background)( dx(p)*dx(v)*real( decay3y*decay3z/decay3x ) +
-							        		   dy(p)*dy(v)*real( decay3x*decay3z/decay3y ) +
-							        		   dz(p)*dz(v)*real( decay3x*decay3y/decay3z ) );
-varf hpmli(p, v) = int3d(Th, PML, background)( dx(p)*dx(v)*imag( decay3y*decay3z/decay3x ) +
-        			       		   			   dy(p)*dy(v)*imag( decay3x*decay3z/decay3y ) +
-        			   	   		   			   dz(p)*dz(v)*imag( decay3x*decay3y/decay3z ) );
+varf hpmlr(p, v) = int3d(Th, PML, BG)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +
+					        		   dy(p)*dy(v)*real( decay1x*decay1z/decay1y ) +
+					        		   dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );
+varf hpmli(p, v) = int3d(Th, PML, BG)( dx(p)*dx(v)*imag( decay1y*decay1z/decay1x ) +
+			       		   			   dy(p)*dy(v)*imag( decay1x*decay1z/decay1y ) +
+			   	   		   			   dz(p)*dz(v)*imag( decay1x*decay1y/decay1z ) );
 
-varf qpmlr(p, v) = int3d(Th, PML, background)( p*v*real( decay3x*decay3y*decay3z ) );
-varf qpmli(p, v) = int3d(Th, PML, background)( p*v*imag( decay3x*decay3y*decay3z ) );
+varf qpmlr(p, v) = int3d(Th, PML, BG)( p*v*real( decay1x*decay1y*decay1z ) );
+varf qpmli(p, v) = int3d(Th, PML, BG)( p*v*imag( decay1x*decay1y*decay1z ) );
 
-varf hbg(p, v) = int3d(Th, background)( Grad(p)'*Grad(v) );
-varf qbg(p, v) = int3d(Th, background)( p*v );
+varf hbg(p, v) = int3d(Th, BG)( Grad(p)'*Grad(v) );
+varf qbg(p, v) = int3d(Th, BG)( p*v );
 
-varf hcav(p, v) = int3d(Th, cavity)( Grad(p)'*Grad(v) );
-varf qcav(p, v) = int3d(Th, cavity)( p*v );
 
 //Coupling
-varf c1(p, v) = int2d(Th, PlateBG)( -p*v );   // the normal vector to he surface is n = -Ux
-varf c2(p, v) = int2d(Th, PlateCavity)( p*v );// the normal vector to he surface is n = +Ux
-
-
+varf c(p, v) = int2d(Th, inplate)( p*v );   // the normal vector to the surface is n = Uz
 
 
 //--------------------------------------------------------------------------
@@ -151,15 +145,12 @@ matrix M = m(VhS, VhS);
 //Fluid
 matrix Hbg = hbg(VhF, VhF);
 matrix Qbg = qbg(VhF, VhF);
-matrix Hcav = hcav(VhF, VhF);
-matrix Qcav = qcav(VhF, VhF);
 matrix Hpmlr = hpmlr(VhF, VhF);
 matrix Hpmli = hpmli(VhF, VhF);
 matrix Qpmlr = qpmlr(VhF, VhF);
 matrix Qpmli = qpmli(VhF, VhF);
 //Coupling
-matrix C1 = c1(VhF, VhF);
-matrix C2 = c2(VhF, VhF);
+matrix C = c(VhF, VhF);
 
 //--------------------------------------------------------------------------
 // Export Data
@@ -183,14 +174,6 @@ ofstream fout(root+"Qbg.txt");
 fout << Qbg << endl;
 }
 {
-ofstream fout(root+"Hcav.txt");
-fout << Hcav << endl;
-}
-{
-ofstream fout(root+"Qcav.txt");
-fout << Qcav << endl;
-}
-{
 ofstream fout(root+"Hpmlr.txt");
 fout << Hpmlr << endl;
 }
@@ -207,13 +190,10 @@ ofstream fout(root+"Qpmli.txt");
 fout << Qpmli << endl;
 }
 {
-ofstream fout(root+"C1.txt");
-fout << C1 << endl;
+ofstream fout(root+"C.txt");
+fout << C << endl;
 }
-{
-ofstream fout(root+"C2.txt");
-fout << C2 << endl;
-}
+
 
 
 saveRegionLabels(VhF, root+"regions.txt");

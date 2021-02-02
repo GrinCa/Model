@@ -1,0 +1,224 @@
+//--------------------------------------------------------------------------
+// Load libraries and mesh
+//--------------------------------------------------------------------------
+
+
+//verbosity = 10;
+
+//loads
+load "msh3" // for buildlayers function
+load "gmsh" // for loading gmsh meshes
+
+//includes
+include "../exports.idp"
+
+
+string root="../../Matrices/Model/"; // Matrices/Plate/
+
+
+//load the mesh from the Gmsh file
+mesh3 Th = gmshload3("../../Mesh/Model/Model.msh");
+
+//region
+int cavity = 1;
+int plate = 2;
+int background = 3;
+int PML = 4;
+//label
+int PlateCavity = 5;
+int PlateBG = 6;
+int embedding = 7;
+int BGPML = 8;
+
+
+//boundary label
+int[int] boundaryLabel(3);
+boundaryLabel(0) = PlateCavity;
+boundaryLabel(1) = PlateBG;
+boundaryLabel(2) = BGPML;
+
+
+
+
+//--------------------------------------------------------------------------
+// Define variables, functions, and macros
+//--------------------------------------------------------------------------
+
+real E = 2e9;
+real nu = 0.3;
+real mu = E/(2*(1+nu));
+real lambda = E*nu/((1+nu)*(1-2*nu));
+
+
+
+real sqrt2=sqrt(2.0);
+
+macro Grad(p) [dx(p),dy(p),dz(p)] // EOM -- End Of Macro
+
+macro epsilon(u1,u2,u3)  [dx(u1),
+						  dy(u2),
+						  dz(u3),
+						  (dz(u2)+dy(u3))/sqrt2,
+						  (dz(u1)+dx(u3))/sqrt2,
+						  (dy(u1)+dx(u2))/sqrt2] // EOM -- End Of Macro
+
+macro div(u1,u2,u3) ( dx(u1)+dy(u2)+dz(u3) ) // EOM -- End Of Macro
+
+
+
+//--------------------------------------------------------------------------
+// Define finite element space, solid and fluid
+//--------------------------------------------------------------------------
+
+fespace VhS(Th,[P2,P2,P2]);
+VhS [u1,u2,u3], [v1,v2,v3];
+
+fespace VhF(Th,P2);
+VhF p,v;
+
+//--------------------------------------------------------------------------
+// PML functions
+//--------------------------------------------------------------------------
+
+
+real Lbg = 0.75;
+real lpml = 0.5;
+
+
+real L1x = 2*Lbg;//real L1x = 5.5;
+real L2x = 2*Lbg+lpml;
+real L1y = Lbg;//real L1y = 3.0;
+real L2y = Lbg+lpml;
+real L1z = Lbg;//real L1z = 3.0;
+real L2z = Lbg+lpml;
+
+real km=5.54;
+real sigma = 1;
+
+func PML3x=sigma/(L2x-abs(x)) ;
+func decay3x=(region==PML) ? 1+1i*PML3x/km : 1 ;//
+func PML3y=sigma/(L2y-abs(y)) ;
+func decay3y=(region==PML) ? 1+1i*PML3y/km : 1 ;//
+func PML3z=sigma/(L2z-abs(z)) ;
+func decay3z=(region==PML) ? 1+1i*PML3z/km : 1 ;//
+
+
+
+
+//--------------------------------------------------------------------------
+// Define varf
+//--------------------------------------------------------------------------
+
+//Solid
+varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
+				                 on(embedding, u1=0, u2=0, u3=0);
+
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( [u1,u2,u3]'*[v1,v2,v3] );
+
+
+//Fluid
+varf hpmlr(p, v) = int3d(Th, PML, background)( dx(p)*dx(v)*real( decay3y*decay3z/decay3x ) +
+							        		   dy(p)*dy(v)*real( decay3x*decay3z/decay3y ) +
+							        		   dz(p)*dz(v)*real( decay3x*decay3y/decay3z ) );
+varf hpmli(p, v) = int3d(Th, PML, background)( dx(p)*dx(v)*imag( decay3y*decay3z/decay3x ) +
+        			       		   			   dy(p)*dy(v)*imag( decay3x*decay3z/decay3y ) +
+        			   	   		   			   dz(p)*dz(v)*imag( decay3x*decay3y/decay3z ) );
+
+varf qpmlr(p, v) = int3d(Th, PML, background)( p*v*real( decay3x*decay3y*decay3z ) );
+varf qpmli(p, v) = int3d(Th, PML, background)( p*v*imag( decay3x*decay3y*decay3z ) );
+
+varf hbg(p, v) = int3d(Th, background)( Grad(p)'*Grad(v) );
+varf qbg(p, v) = int3d(Th, background)( p*v );
+
+varf hcav(p, v) = int3d(Th, cavity)( Grad(p)'*Grad(v) );
+varf qcav(p, v) = int3d(Th, cavity)( p*v );
+
+//Coupling
+varf c1(p, v) = int2d(Th, PlateBG)( -p*v );   // the normal vector to he surface is n = -Ux
+varf c2(p, v) = int2d(Th, PlateCavity)( p*v );// the normal vector to he surface is n = +Ux
+
+
+
+
+//--------------------------------------------------------------------------
+// Define matrices
+//--------------------------------------------------------------------------
+
+//Solid
+matrix K = k(VhS, VhS);
+matrix M = m(VhS, VhS);
+//Fluid
+matrix Hbg = hbg(VhF, VhF);
+matrix Qbg = qbg(VhF, VhF);
+matrix Hcav = hcav(VhF, VhF);
+matrix Qcav = qcav(VhF, VhF);
+matrix Hpmlr = hpmlr(VhF, VhF);
+matrix Hpmli = hpmli(VhF, VhF);
+matrix Qpmlr = qpmlr(VhF, VhF);
+matrix Qpmli = qpmli(VhF, VhF);
+//Coupling
+matrix C1 = c1(VhF, VhF);
+matrix C2 = c2(VhF, VhF);
+
+//--------------------------------------------------------------------------
+// Export Data
+//--------------------------------------------------------------------------
+
+
+{
+ofstream fout(root+"M.txt");
+fout<< M <<endl;
+}
+{
+ofstream fout(root+"K.txt");
+fout<< K <<endl;
+}
+{
+ofstream fout(root+"Hbg.txt");
+fout << Hbg << endl;
+}
+{
+ofstream fout(root+"Qbg.txt");
+fout << Qbg << endl;
+}
+{
+ofstream fout(root+"Hcav.txt");
+fout << Hcav << endl;
+}
+{
+ofstream fout(root+"Qcav.txt");
+fout << Qcav << endl;
+}
+{
+ofstream fout(root+"Hpmlr.txt");
+fout << Hpmlr << endl;
+}
+{
+ofstream fout(root+"Hpmli.txt");
+fout << Hpmli << endl;
+}
+{
+ofstream fout(root+"Qpmlr.txt");
+fout << Qpmlr << endl;
+}
+{
+ofstream fout(root+"Qpmli.txt");
+fout << Qpmli << endl;
+}
+{
+ofstream fout(root+"C1.txt");
+fout << C1 << endl;
+}
+{
+ofstream fout(root+"C2.txt");
+fout << C2 << endl;
+}
+
+
+saveRegionLabels(VhF, root+"regions.txt");
+saveBoundariesLabels(VhF, boundaryLabel, root+"labels.txt");
+saveNodes(VhF,root+"Nodes.txt");
+saveConnectivity(Th, VhF, root+"connectivity_table.txt");
+
+

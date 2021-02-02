@@ -14,7 +14,7 @@ if (flag.rerun) % EDP updated and/or mesh updated
    disp('************************');
    disp('*Rerun FreeFem++ script*');
    disp('************************');
-   edpcommand = strcat('FreeFem++'," ",mesh.file,'.edp');
+   edpcommand = strcat('FreeFem++'," ",'EDP/', mesh.file, '/', mesh.file,'.edp');
    system(edpcommand);
    timing.freefem = cputime-t_0;
    disp('*********************************************************');
