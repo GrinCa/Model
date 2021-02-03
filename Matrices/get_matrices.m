@@ -74,13 +74,10 @@ end
 function FEmatrices = build_global(FEmatrices,listLHS,param,FILENAME)
 % this function call the specific function for each given problem. You have
 % to create a .m file for eash problem called Problem_pattern. For instance
-% if Problem1 is one problem to study, then create Problem1_pattern. Then
-% you need to compute it.
+% if Problem1 is one problem to study
 
-FEmatrices = Modelv4_pattern(FEmatrices,listLHS,param,FILENAME);
-%FEmatrices = Plate_pattern(FEmatrices,listLHS,param,FILENAME);
-%FEmatrices = Modelv2_pattern(FEmatrices,listLHS,param,FILENAME);
-%FEmatrices = build_BGField(FEmatrices,param);
+pattern = str2func([FILENAME '_pattern']);
+FEmatrices = pattern(FEmatrices,listLHS,param,FILENAME);
 end
 
 

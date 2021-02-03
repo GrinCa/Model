@@ -13,21 +13,21 @@ load "gmsh" // for loading gmsh meshes
 include "../exports.idp"
 
 
-string root="../../Matrices/Modelv3/"; // Matrices/Plate/
+string root="../../Matrices/Modelv5/";
 
 
 //load the mesh from the Gmsh file
-mesh3 Th = gmshload3("../../Mesh/Modelv3/Modelv3.msh");
+mesh3 Th = gmshload3("../../Mesh/Modelv5/Modelv5.msh");
 
 //region
 int plate = 5;
-int BG = 6;
+int ROOM = 6;
 int PML = 7;
 //label
 int embedding = 1;
-int extplate = 2;
-int inplate = 3;
-int BGPML = 4;
+int inplate = 2;
+int extplate = 3;
+int ROOMPML = 4;
 
 
 
@@ -35,7 +35,7 @@ int BGPML = 4;
 int[int] boundaryLabel(3);
 boundaryLabel(0) = inplate;
 boundaryLabel(1) = extplate;
-boundaryLabel(2) = BGPML;
+boundaryLabel(2) = ROOMPML;
 
 
 
@@ -122,22 +122,20 @@ varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] )
 
 
 //Fluid
-varf hpmlr(p, v) = int3d(Th, PML, BG)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +
+varf hpmlr(p, v) = int3d(Th, PML, ROOM)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +
 					        		   dy(p)*dy(v)*real( decay1x*decay1z/decay1y ) +
 					        		   dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );
-varf hpmli(p, v) = int3d(Th, PML, BG)( dx(p)*dx(v)*imag( decay1y*decay1z/decay1x ) +
+varf hpmli(p, v) = int3d(Th, PML, ROOM)( dx(p)*dx(v)*imag( decay1y*decay1z/decay1x ) +
 			       		   			   dy(p)*dy(v)*imag( decay1x*decay1z/decay1y ) +
 			   	   		   			   dz(p)*dz(v)*imag( decay1x*decay1y/decay1z ) );
 
-varf qpmlr(p, v) = int3d(Th, PML, BG)( p*v*real( decay1x*decay1y*decay1z ) );
-varf qpmli(p, v) = int3d(Th, PML, BG)( p*v*imag( decay1x*decay1y*decay1z ) );
+varf qpmlr(p, v) = int3d(Th, PML, ROOM)( p*v*real( decay1x*decay1y*decay1z ) );
+varf qpmli(p, v) = int3d(Th, PML, ROOM)( p*v*imag( decay1x*decay1y*decay1z ) );
 
-varf hbg(p, v) = int3d(Th, BG)( Grad(p)'*Grad(v) );
-varf qbg(p, v) = int3d(Th, BG)( p*v );
 
 
 //Coupling
-varf c(p, v) = int2d(Th, inplate)( p*v );   // the normal vector to the surface is n = Uz
+varf c(p, v) = int2d(Th, extplate)( p*v );   // the normal vector to the surface is n = Uz
 
 
 //--------------------------------------------------------------------------
@@ -149,8 +147,6 @@ matrix Kr = kr(VhS, VhS);
 matrix Ki = ki(VhS, VhS);
 matrix M = m(VhS, VhS);
 //Fluid
-matrix Hbg = hbg(VhF, VhF);
-matrix Qbg = qbg(VhF, VhF);
 matrix Hpmlr = hpmlr(VhF, VhF);
 matrix Hpmli = hpmli(VhF, VhF);
 matrix Qpmlr = qpmlr(VhF, VhF);
@@ -174,14 +170,6 @@ fout<< Kr <<endl;
 {
 ofstream fout(root+"Ki.txt");
 fout<< Ki <<endl;
-}
-{
-ofstream fout(root+"Hbg.txt");
-fout << Hbg << endl;
-}
-{
-ofstream fout(root+"Qbg.txt");
-fout << Qbg << endl;
 }
 {
 ofstream fout(root+"Hpmlr.txt");

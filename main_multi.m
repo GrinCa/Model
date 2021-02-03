@@ -41,9 +41,9 @@ addpath(genpath(strcat(pwd,'/',STL)));
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
-                       % next three flag won't be considered.
-flag.calculateFE = 0;  % calculate FE solution, 
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
+                       % next three flags won't be considered.
+flag.calculateFE = 1;  % calculate FE solution, 
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
@@ -71,7 +71,7 @@ end
 
 
 % Input files for mesh and FE matrices
-mesh.file = 'Modelv4';
+mesh.file = 'Modelv5';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 
@@ -84,8 +84,8 @@ timing.FE = 0;
 
 % Material parameters
 param.c0 = 340; %m/s
+param.rho = 1200; %kg/m3
 param.rho0 = 1.29; %kg/m3
-param.eta = 5e-2;
 %%%%% Background pressure field %%%%%
 
 % Frequency range
@@ -113,7 +113,7 @@ param.direction_coeff = param.direction(find(param.direction));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [65];
+param.freqref = [225];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -151,9 +151,9 @@ param.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['.
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Definition of the matrices coeffs
-coeff_LHS = {@(f,theta) 1+1i*param.eta,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0*cos((2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
-                                                        param.direction_coeff(2)*x2.*sin(theta)));
+coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
+coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
+                                                           param.direction_coeff(2)*x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
@@ -171,7 +171,11 @@ param = build_interval(param);
 % Matrices calculated with Freefem++
 %--------------------------------------------------------------------------
 if flag.getmatrices
-    matrix_names = ["K.txt","M.txt","C.txt"]; % matrices defined on the incident domain     
+    matrix_names = ["Kr.txt","Ki.txt","M.txt",...
+                    "Hbg.txt","Qbg.txt",...
+                    "Hpmlr.txt","Hpmli.txt",...
+                    "Qpmlr.txt","Qpmli.txt",...
+                    "C.txt"]; %["K.txt","M.txt","C.txt"];   
     [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
     Nodes = FEmatrices.Nodes;
     LHS = FEmatrices.LHS;
@@ -208,7 +212,6 @@ if flag.recalculated
        id = zmumps(id,matrix_analysis); % perform analysis
        for ii=1:param.nfreq
            for jj=1:param.ntheta
-               tic;
                disp(['[FE] [Frequency, Theta] = [',num2str(param.freq(ii)),',',num2str(param.theta(jj)/pi*180),']']);
                Aglob = sparse(size(LHS{1},1),size(LHS{1},2));
                for kk = 1:nLHS
@@ -220,7 +223,6 @@ if flag.recalculated
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
                SOLFE(:,ii,jj) = resp_P;
-               toc;
            end
        end
        id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
@@ -299,7 +301,6 @@ if flag.recalculated
                     disp('**************************************');
                     disp('* Compute calculation of WCAWE basis *');
                     disp('**************************************');
-                    t_WCAWE = tic;
                     % Setup list of derivative coefficients and RHS derivatives
                     arg.algo = 'WCAWE';
                     SOLWCAWE = zeros(length(param.idx_out),length(param.freq),length(param.theta));
@@ -315,7 +316,6 @@ if flag.recalculated
                             disp('**** MDWCAWE projection done ****');
                         end
                     end
-                    timing.WCAWE = toc;
                 end
             end
        end
@@ -483,7 +483,7 @@ if flag.convert2VTK
     end
 end
 
-TL = get_STL(FEmatrices,param,SOLFE);
+TL = get_STL(FEmatrices,param,SOLFE,'rayleigh');
 plot(param.freq,TL);
 
 if flag.calculateTL

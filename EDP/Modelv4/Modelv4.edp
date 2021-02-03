@@ -43,6 +43,7 @@ boundaryLabel(2) = embedding;
 real E = 2e9;
 real nu = 0.37;
 real rhoS = 1200;
+real eta = 5e-2;
 
 real mu = E/(2*(1+nu));
 real lambda = E*nu/((1+nu)*(1-2*nu));
@@ -73,9 +74,12 @@ Vh u,v;
 //--------------------------------------------------------------------------
 
 //Solid
-varf k([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
-	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
-				                 on(embedding, u1=0, u2=0, u3=0);
+varf kr([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	                    2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
+				                  on(embedding, u1=0, u2=0, u3=0);
+
+varf ki([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( eta*( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	                          2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) );
 
 varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
 
@@ -89,7 +93,8 @@ varf c(u, v) = int2d(Th, inplate)( u*v );
 //--------------------------------------------------------------------------
 
 //Solid
-matrix K = k(VhS, VhS);
+matrix Kr = kr(VhS, VhS);
+matrix Ki = ki(VhS, VhS);
 matrix M = m(VhS, VhS);
 matrix C = c(Vh,  Vh);
 
@@ -103,8 +108,12 @@ matrix C = c(Vh,  Vh);
 	fout<< M <<endl;
 }
 {
-	ofstream fout(root+"K.txt");
-	fout<< K <<endl;
+	ofstream fout(root+"Kr.txt");
+	fout<< Kr <<endl;
+}
+{
+	ofstream fout(root+"Ki.txt");
+	fout<< Ki <<endl;
 }
 {
 	ofstream fout(root+"C.txt");

@@ -1,11 +1,11 @@
-function [rayleigh_matrices, element_data, normal_direction,Plan2D] = RIM(FEmatrices,param)
+function [rayleigh_matrices, element_data] = RIM(FEmatrices,param)
 % rayleigh_matrices: cell of matrices (as many as frequencies)
 rayleigh_matrices = cell(param.nfreq,1);
 % normal_direction: integer (1,2 or 3) whether the normal of the plate is 
 % x,y or z
 
 % get all data needed for the calculation of the matrix
-[element_data, element_center, normal_direction,Plan2D] = get_element_surface(FEmatrices, param);
+[element_data, element_center] = get_element_surface(FEmatrices, param);
 
 % for ii=1:size(element_data)
 %     plot3(FEmatrices.Nodes(element_data(ii,:),1),FEmatrices.Nodes(element_data(ii,:),2),FEmatrices.Nodes(element_data(ii,:),3),'o');
@@ -14,8 +14,8 @@ rayleigh_matrices = cell(param.nfreq,1);
 
 n_elem = length(element_data);
 
-u = ones(size(FEmatrices.Surf_matrix,1),1);
-Se = u'*FEmatrices.Surf_matrix*u / n_elem;
+unit = ones(size(FEmatrices.Surf_matrix,1),1);
+Se = unit'*FEmatrices.Surf_matrix*unit / n_elem;
 
 disp("Start Rayleigh calculation");
 
@@ -38,7 +38,7 @@ end
 
 end
 
-function [element_data, element_center, normal_direction,plan2D] = get_element_surface(FEmatrices, param)
+function [element_data, element_center] = get_element_surface(FEmatrices, param)
 % list_nodes_surface: list of the nodes belonging to the surface
 % element_data: 2D array (as much rows as elements, column1 = number of the
 %                                                             element
@@ -74,15 +74,14 @@ for ii=1:size(element_data,1)
     element_center(ii,:) = mean(FEmatrices.Nodes(element_data(ii,:),:),1);
 end
 
-
-% %Calculation of the surface of the 2D triangle of the surface
-indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
-                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
-                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
-plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
-                           % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
-                           
-normal_direction = find(indicator_Plan == min(indicator_Plan));
+% 
+% % %Calculation of the surface of the 2D triangle of the surface
+% indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
+%                   norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
+%                   norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
+% Plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
+%                            % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
+%  
 
 
 %display part
