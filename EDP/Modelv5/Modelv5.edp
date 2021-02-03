@@ -10,14 +10,14 @@ load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
 //includes
-include "../exports.idp"
+include "EDP/exports.idp"
 
 
-string root="../../Matrices/Modelv5/";
+string root="Matrices/Modelv5/";
 
 
 //load the mesh from the Gmsh file
-mesh3 Th = gmshload3("../../Mesh/Modelv5/Modelv5.msh");
+mesh3 Th = gmshload3("Mesh/Modelv5/Modelv5.msh");
 
 //region
 int plate = 5;
@@ -82,7 +82,7 @@ VhF p,v;
 
 
 real Lbg = 0.5;
-real lpml = 1;
+real lpml = 0.5;
 real lplate = 0.2;
 
 real Lbg1x = lplate;
@@ -92,16 +92,20 @@ real Lbg2y = lplate+lpml;
 real Lbg1z = Lbg;
 real Lbg2z = Lbg+lpml;
 
-real km=2.5;
-real sigma1 = 7.67;
-real sigma2 = 6.14;
+real fstar = 100; //Hz
 
-func PML1x=sigma1/(Lbg2x-abs(x)) ;
-func decay1x=(region==PML) ? 1+1i*PML1x/km : 1 ;//
-func PML1y=sigma1/(Lbg2y-abs(y)) ;
-func decay1y=(region==PML) ? 1+1i*PML1y/km : 1 ;//
-func PML1z=sigma2/(Lbg2z-abs(z)) ;
-func decay1z=(region==PML) ? 1+1i*PML1z/km : 1 ;//
+real km = 2*pi*fstar/340.0;
+real sigma1 = log(1e3)/(lplate+lpml);
+real sigma2 = log(1e3)/(Lbg+lpml);
+
+cout << "\n\nkm = " << km << "\nsig1 = " << sigma1 << "\nsig2 = " << sigma2 << endl << endl;
+
+func PML1x=sigma1*lpml/(Lbg2x-abs(x)) ;
+func decay1x=(region==PML) ? 1-1i*PML1x/km : 1 ;//
+func PML1y=sigma1*lpml/(Lbg2y-abs(y)) ;
+func decay1y=(region==PML) ? 1-1i*PML1y/km : 1 ;//
+func PML1z=sigma2*lpml/(Lbg2z-abs(z)) ;
+func decay1z=(region==PML) ? 1-1i*PML1z/km : 1 ;//
 
 
 

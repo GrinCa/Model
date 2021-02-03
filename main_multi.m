@@ -298,7 +298,6 @@ if flag.plotMQP
     ylabel('Mean quadratic pressure (dB)');
     legend();
     hold off
-    
     fclose(fid);
 end
 

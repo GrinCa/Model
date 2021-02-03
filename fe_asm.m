@@ -6,7 +6,7 @@ RHS = zeros(FEmatrices.size_system,1);
 
 gauss_point = [1.0/3.0;...
                1.0/3.0];
-gauss_coeff = 1.0/2.0;
+gauss_coeff =  1.0/2.0;
 
 
 for n=1:length(element_data)
@@ -37,7 +37,7 @@ function [element_data, element_center, plan2D] = get_element_surface(FEmatrices
 %                                                   column2 = node2
 %                                                   column3 = node3
 connectivity_table = FEmatrices.connectivity+1;%FreeFem++ indexes nodes with 0 as first value (0+1=first value in Matlab)
-list_nodes_surface = FEmatrices.PlateExt;
+list_nodes_surface = FEmatrices.PlateIn;
 element_data = [];
 table_elements_test = zeros(size(connectivity_table));
 connectivity_table = sort(connectivity_table,2);
@@ -66,9 +66,9 @@ end
 
 
 % %Calculation of the surface of the 2D triangle of the surface
-indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
-                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
-                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
+indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateIn,1)-FEmatrices.Nodes(FEmatrices.PlateIn(1),1)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateIn,2)-FEmatrices.Nodes(FEmatrices.PlateIn(1),2)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateIn,3)-FEmatrices.Nodes(FEmatrices.PlateIn(1),3))];
 plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
                            % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
   

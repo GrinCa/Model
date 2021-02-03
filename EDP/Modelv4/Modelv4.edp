@@ -10,14 +10,14 @@ load "msh3" // for buildlayers function
 load "gmsh" // for loading gmsh meshes
 
 //includes
-include "../exports.idp"
+include "EDP/exports.idp"
 
 
-string root="../../Matrices/Modelv4/"; 
+string root="Matrices/Modelv4/"; 
 
 
 //load the mesh from the Gmsh file
-mesh3 Th = gmshload3("../../Mesh/Modelv4/Modelv4.msh");
+mesh3 Th = gmshload3("Mesh/Modelv4/Modelv4.msh");
 
 //region
 int plate = 1;

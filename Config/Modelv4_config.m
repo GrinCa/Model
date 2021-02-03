@@ -1,4 +1,4 @@
-function [flag, param] = Modelv5_config()
+function [flag, param] = Modelv4_config()
 
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
@@ -108,9 +108,7 @@ param.coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
-                      "Hpmlr.txt","Hpmli.txt",...
-                      "Qpmlr.txt","Qpmli.txt",...
-                      "C1.txt","C2.txt"];
+                      "C.txt"];
                   
 param.STL.config = 'std';
 
