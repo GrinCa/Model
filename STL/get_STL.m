@@ -1,6 +1,6 @@
-function TL = get_STL(FEmatrices, param, SOL, arg)
+function TL = get_STL(FEmatrices, param, SOL)
 
-[P_inc, P_rad] = get_powers(FEmatrices, param, SOL, arg);
+[P_inc, P_rad] = get_powers(FEmatrices, param, SOL);
 
 tau_theta = abs(P_rad./P_inc);
 

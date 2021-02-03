@@ -1,7 +1,7 @@
-function [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param)
+function [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param)
 
-for ii=1:length(matrix_names)
-    matrix_names{ii} = strcat(mesh.file,'/',matrix_names{ii});
+for ii=1:length(param.matrix_names)
+    param.matrix_names{ii} = strcat(mesh.file,'/',param.matrix_names{ii});
 end
 
 
@@ -28,14 +28,14 @@ end % if
 % Get matrices from the files
 %--------------------------------------------------------------------------
 
-listLHS = cell(1,length(matrix_names)); 
+listLHS = cell(1,length(param.matrix_names)); 
 
 
 % Matrices of the FE problem
-for ii=1:length(matrix_names)
+for ii=1:length(param.matrix_names)
     nrows = 0;
     ncolums = 0;
-    fid = fopen(matrix_names(ii),'rt');
+    fid = fopen(param.matrix_names(ii),'rt');
     for jj=1:3
         line = fgets(fid);
         if jj==3
@@ -45,7 +45,7 @@ for ii=1:length(matrix_names)
         end
     end
     fclose(fid);
-    matrix_data = importdata(matrix_names(ii)," ",3);
+    matrix_data = importdata(param.matrix_names(ii)," ",3);
     matrix_data = matrix_data.data;
     listLHS{ii} = sparse([matrix_data(:,1);nrows-1]+1,[matrix_data(:,2);ncolums-1]+1,[matrix_data(:,3);0]);
 end

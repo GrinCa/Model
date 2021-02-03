@@ -18,13 +18,14 @@
 %--------------------------------------------------------------------------
 
 % Add folders for Mumps, WCAWE, and Mesh functions/files
-global Meshfold WCAWEfold Mumps DataMap Derivatives STL
+
 Meshfold = 'Matrices';
 WCAWEfold = 'WCAWE';
 Mumps = 'Mumps';
 DataMap = 'DataMap';
 Derivatives = 'Derivatives';
 STL = 'STL';
+Config = 'Config';
 
 addpath(genpath(strcat(pwd,'/',Meshfold)));
 addpath(genpath(strcat(pwd,'/',WCAWEfold)));
@@ -32,157 +33,41 @@ addpath(genpath(strcat(pwd,'/',Mumps)));
 addpath(genpath(strcat(pwd,'/',DataMap)));
 addpath(genpath(strcat(pwd,'/',Derivatives)));
 addpath(genpath(strcat(pwd,'/',STL)));
-
+addpath(genpath(strcat(pwd,'/',Config)));
 
 %--------------------------------------------------------------------------
 % Input data for the problem
 %--------------------------------------------------------------------------
-
-% Input parameters for Matlab calculation
-flag.rerun = 1; % to recalculate FreeFem++ matrices
-flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
-                       % next three flags won't be considered.
-flag.calculateFE = 1;  % calculate FE solution, 
-flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
-flag.calculateWCAWE = 0; % calculate WCAWE solution
-
-
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
-
-flag.converge = 0; % this is to post process convergence test, not to perform
-                   % one
-flag.plotMQP = 0;
-flag.calculateTL = 0;
-flag.converge_sizemesh = 0;
-flag.compare_FE_WCAWE = 0;
-flag.normalized_error = 0;
-
-
-flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
-% useful if you just post-process the results. Indeed, depending on the
-% model, it can be quite long to read the .txt file that contains the
-% matrices
-
-if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL || flag.converge_sizemesh || flag.normalized_error
-    flag.getmatrices = 0;
-    flag.rerun = 0;
-    flag.recalculated = 0;
-end
-
-
 % Input files for mesh and FE matrices
 mesh.file = 'Modelv5';
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
+config = str2func([mesh.file '_config']);
+[flag, param] = config();
 
-% define timing struct to access to time calculation of each method                                                    
-timing.freefem = 0;
-timing.WCAWE = 0;
-timing.MDWCAWE = 0;
-timing.FE = 0;                                                    
-
-
-% Material parameters
-param.c0 = 340; %m/s
-param.rho = 1200; %kg/m3
-param.rho0 = 1.29; %kg/m3
-%%%%% Background pressure field %%%%%
-
-% Frequency range
-param.fmin = 50;
-param.fmax = 400;
-param.f_range = [param.fmin param.fmax];
-param.freqincr = 8; % 20
-param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
-param.nfreq = length(param.freq);
-
-% Angle range
-param.thetamin = 0;
-param.thetamax = 0;
-param.theta_range = [param.thetamin param.thetamax];
-param.thetaincr = 0.05;
-param.theta = param.thetamin : param.thetaincr : param.thetamax; % frequency range
-param.ntheta = length(param.theta);
-
-P0 = 1;
-param.direction = [1;0;1];
-param.direction_coeff = param.direction(find(param.direction));
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% those frequencies are the frequencies point for Padé expension
-param.freqref = [225];
-param.nfreqref = length(param.freqref);
-
-param.thetaref = [0];
-param.nthetaref = length(param.thetaref);
-
-% interval_construct enables us to build sub basis for WCAWE by
-% by using the ref frequencies as we want. We can choose which ref freq to
-% add for each sub basis. The number of sub basis for WCAWE before SVD is
-% equal to length(interval_construct)
-param.interval_construct = {{[1]};
-                            {[1]}};
-
-% Input data for the loop over expansion orders. Note that for each
-% frequency sweep the number of vectors from the WCAWE basis will depend on
-% the number of point for Padé expension. For instance, if we have 2 points
-% for expansion, and nvecfreq=5 (order of expansion), we will have 15
-% vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 3;
-param.nvecfreqmax = 3;
-param.incrvecfreq = 20;
-param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
-
-param.nvecthetamin = 1;
-param.nvecthetamax = 1;
-param.incrvectheta = 20;
-param.vecthetarange = param.nvecthetamin : param.incrvectheta : param.nvecthetamax;
-
-%Identificator
-param.path1 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
-                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']'];
-param.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
-                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']/'...
-                '[' num2str(param.nvecfreqmin) '_' num2str(param.nvecthetamin) ']['...
-                replace(num2str(param.freqref),' ','_') '][' replace(num2str(param.thetaref),' ','_') ']'];
-            
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Definition of the matrices coeffs
-coeff_LHS = {@(f,theta) 1,@(f,theta) -(2*pi*f)^2};
-coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction_coeff(1)*x1.*cos(theta)+...
-                                                           param.direction_coeff(2)*x2.*sin(theta)));
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % generation of the different folder to store data if they don't already exist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 param = genfolders(mesh,param);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %--------------------------------------------------------------------------
 % Build intervals for the Parametric sweep
 %--------------------------------------------------------------------------
 param = build_interval(param);
 
+
 %--------------------------------------------------------------------------
 % Matrices calculated with Freefem++
 %--------------------------------------------------------------------------
 if flag.getmatrices
-    matrix_names = ["Kr.txt","Ki.txt","M.txt",...
-                    "Hbg.txt","Qbg.txt",...
-                    "Hpmlr.txt","Hpmli.txt",...
-                    "Qpmlr.txt","Qpmli.txt",...
-                    "C.txt"]; %["K.txt","M.txt","C.txt"];   
-    [FEmatrices,ndof,timing,flag] = get_matrices(timing,flag,mesh,matrix_names,param);
+    [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param);
     Nodes = FEmatrices.Nodes;
     LHS = FEmatrices.LHS;
     nLHS = length(LHS);
     param.idx_out = 1:1:FEmatrices.size_system;
     % Save data only for FE solution
-    save(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param','timing');
+    save(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param');
 end
 
 %-----------------------------------------------------------------------------------------
@@ -215,7 +100,7 @@ if flag.recalculated
                disp(['[FE] [Frequency, Theta] = [',num2str(param.freq(ii)),',',num2str(param.theta(jj)/pi*180),']']);
                Aglob = sparse(size(LHS{1},1),size(LHS{1},2));
                for kk = 1:nLHS
-                  Aglob = Aglob + coeff_LHS{kk}(param.freq(ii))*LHS{kk};
+                  Aglob = Aglob + param.coeff_LHS{kk}(param.freq(ii))*LHS{kk};
                end
                id.JOB = 5;
                %[id.RHS,BG_field(FEmatrices.field,ii,jj)] = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
@@ -226,7 +111,6 @@ if flag.recalculated
            end
        end
        id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
-       timing.FE = cputime-t_FE;
     end
 
    
@@ -244,8 +128,9 @@ if flag.recalculated
             disp('*************************************');
             disp('* Recalculate all cross derivatives *');
             disp('*************************************');
-            create_cross_derivatives(nLHS,coeff_LHS,...
-                                     coeff_RHS,deriv_deg,...
+            create_cross_derivatives(nLHS,...
+                                     param.coeff_LHS,...
+                                     param.coeff_RHS,deriv_deg,...
                                      {'f';'theta'},{'f,theta';...
                                                     'f,theta';...
                                                     'f,theta,x1,x2'});
@@ -255,8 +140,9 @@ if flag.recalculated
             disp('*************************************');
             disp('* Recalculate all cross derivatives *');
             disp('*************************************');
-            create_cross_derivatives(LHS,coeff_LHS,...
-                                     coeff_RHS,deriv_deg,...
+            create_cross_derivatives(LHS,...
+                                     param.coeff_LHS,...
+                                     param.coeff_RHS,deriv_deg,...
                                      {'f';'theta'},{'f,theta';...
                                                     'f,theta';...
                                                     'f,theta,x1,x2'});
@@ -427,64 +313,17 @@ if flag.convert2VTK
     DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
     FEmatrices = DATA{1};
     param = DATA{2};
-    %%%
-%     PARTITION = cell(5);
-%     
-%     PARTITION{1} = {'scalar',...
-%                     FEmatrices.indexP_CAVITY,...
-%                     FEmatrices.cavity_nodes,...
-%                     'CAVITY_PRESSURE'};
-%     PARTITION{2} = {'scalar',...
-%                      FEmatrices.indexP_BG_PML,...
-%                      FEmatrices.BG_PML_nodes,...
-%                      'SCATTERED_PRESSURE'};
-%     PARTITION{3} = {'vector',...
-%                     [FEmatrices.indexu1;...
-%                      FEmatrices.indexu2;...
-%                      FEmatrices.indexu3],...
-%                      FEmatrices.plate_nodes,...
-%                      'DISPLACEMENT'};
-%     PARTITION{4} = {'data',...
-%                      FEmatrices.BG_pressure,...
-%                      'BG_PRESSURE'};
-%     Force_vector = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
-%     Force_vector(FEmatrices.BG_nodes,:,:) = FEmatrices.RHS_BG(FEmatrices.indexP_BG,:,:);
-%     PARTITION{5} = {'data',...
-%                      Force_vector,...
-%                      'FORCE_VECTOR'};
-
-%      PARTITION{1} = {'scalar',...
-%                      FEmatrices.indexSIS,...
-%                      FEmatrices.SIS,...
-%                     'PRESSURE'};
-     PARTITION{1} = {'vector',...
-                    [FEmatrices.indexu1;...
-                     FEmatrices.indexu2;...
-                     FEmatrices.indexu3],...
-                     FEmatrices.plate_nodes,...
-                     'DISPLACEMENT'};
-%      PARTITION{3} = {'data',...
-%                      BG_field(:,1,1),...
-%                     'BG_pressure'};
-                              
-
-    %%%
-    range = {1:1:1, 1:1:1};
-
+    vtk_config = str2func([mesh.file '_vtk']);
+    param = vtk_config(FEmatrices,param);
     if flag.calculateFE
         SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
-        SOLFE = SOLFE{1};
-%         arg.type = 'total_pressure';
-%         PARTITION{5} = {'data',...
-%                         post_process(FEmatrices,param,arg,SOLFE),...
-%                         'Total_pressure'};
-        
-        convertGEO2VTK('linear',FEmatrices,mesh,sizemesh,SOLFE,PARTITION,param,range);
+        SOLFE = SOLFE{1};      
+        convertGEO2VTK('linear',FEmatrices,mesh,sizemesh,SOLFE,param.VTK.PARTITION,param,param.VTK.range);
     end
 end
 
-TL = get_STL(FEmatrices,param,SOLFE,'rayleigh');
-plot(param.freq,TL);
+% TL = get_STL(FEmatrices,param,SOLFE);
+% plot(param.freq,TL);
 
 if flag.calculateTL
     clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;

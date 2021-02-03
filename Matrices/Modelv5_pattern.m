@@ -18,8 +18,8 @@ Hpmlr  = listLHS{4};
 Hpmli  = listLHS{5};
 Qpmlr  = listLHS{6};
 Qpmli  = listLHS{7};
-Ctmp   = listLHS{8}; % coupling matrix
-
+Ctmp1   = listLHS{8}; % coupling matrix
+Ctmp2   = listLHS{9}; % coupling matrix
 
 %connectivity
 FEmatrices.connectivity = load(['Matrices/',FILENAME,'/connectivity_table.txt']);
@@ -28,11 +28,11 @@ FEmatrices.connectivity = load(['Matrices/',FILENAME,'/connectivity_table.txt'])
 % get the arrays of the nodes belonging to a given region/label
 tab_region = get_regions([plate_region,ROOM_region,PML_region],ndof,FILENAME);
 FEmatrices.plate_nodes  = find(tab_region(:,1));
-FEmatrices.ROOM_nodes     = find(tab_region(:,2));
+FEmatrices.ROOM_nodes   = find(tab_region(:,2));
 FEmatrices.PML_nodes    = find(tab_region(:,3));
 FEmatrices.SIS          = find((tab_region(:,3)+tab_region(:,2)) >= 1);%semi-infinite-space
 
-labels_cell = get_labels([in_plate_label,ext_plate_label,BGPML_label],...
+labels_cell = get_labels([in_plate_label,ext_plate_label,ROOMPML_label],...
                          FILENAME);
 FEmatrices.PlateIn   = find(labels_cell{1});
 FEmatrices.PlateExt  = find(labels_cell{2});
@@ -47,9 +47,16 @@ for ii=1:length(FEmatrices.plate_nodes)
 end
 
 
-plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
-plot3(FEmatrices.Nodes(plate_nodes,1),FEmatrices.Nodes(plate_nodes,2),FEmatrices.Nodes(plate_nodes,3),'+');
-plot3(FEmatrices.Nodes(FEmatrices.field,1),FEmatrices.Nodes(FEmatrices.field,2),FEmatrices.Nodes(FEmatrices.field,3),'+');
+
+
+% plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
+% plot3(FEmatrices.Nodes(FEmatrices.ROOM_nodes,1),FEmatrices.Nodes(FEmatrices.ROOM_nodes,2),FEmatrices.Nodes(FEmatrices.ROOM_nodes,3),'+');
+% plot3(FEmatrices.Nodes(FEmatrices.PlateIn,1),FEmatrices.Nodes(FEmatrices.PlateIn,2),FEmatrices.Nodes(FEmatrices.PlateIn,3),'+');
+
+
+for ii=1:length(FEmatrices.PlateExt)
+    FEmatrices.indexPlateExt(ii) = length(tab_plate)+find(FEmatrices.SIS==FEmatrices.PlateExt(ii)); 
+end
 
 % indexing of the differents subspaces for partitionning
 FEmatrices.indexu1        = 1:3:length(tab_plate);
@@ -59,8 +66,6 @@ FEmatrices.indexSIS       = (length(tab_plate)+1) : 1 : (length(tab_plate)+lengt
 
 K = Kr(tab_plate,tab_plate) + 1i*Ki(tab_plate,tab_plate);
 M = M(tab_plate,tab_plate);
-FEmatrices.Hbg = Hbg(FEmatrices.BG_nodes,FEmatrices.BG_nodes);%needed for the calculation of the RHS
-FEmatrices.Qbg = Qbg(FEmatrices.BG_nodes,FEmatrices.BG_nodes);%needed for the calculation of the RHS
 Hpmlr = Hpmlr(FEmatrices.SIS,FEmatrices.SIS);
 Hpmli = Hpmli(FEmatrices.SIS,FEmatrices.SIS);
 Hpml = Hpmlr + 1i*Hpmli;
@@ -68,9 +73,9 @@ Qpmlr = Qpmlr(FEmatrices.SIS,FEmatrices.SIS);
 Qpmli = Qpmli(FEmatrices.SIS,FEmatrices.SIS);
 Qpml = Qpmlr + 1i*Qpmli;
 C = sparse(size(M,1),size(Hpml,2));
-C(FEmatrices.indexu3,:) = Ctmp(FEmatrices.plate_nodes,FEmatrices.SIS);
-FEmatrices.Surf_matrix = Ctmp(FEmatrices.PlateIn, FEmatrices.PlateIn);
-
+C(FEmatrices.indexu3,:) = Ctmp2(FEmatrices.plate_nodes,FEmatrices.SIS);
+FEmatrices.SurfIn_matrix = Ctmp1(FEmatrices.PlateIn, FEmatrices.PlateIn);
+FEmatrices.SurfExt_matrix = Ctmp2(FEmatrices.PlateExt, FEmatrices.PlateExt);
 
 Kglob = sparse([K -C;...
                 sparse(size(Hpml,1),size(K,2)) Hpml]);

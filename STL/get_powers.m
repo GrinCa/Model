@@ -1,4 +1,4 @@
-function [P_inc, P_rad] = get_powers(FEmatrices, param, SOL, arg)
+function [P_inc, P_rad] = get_powers(FEmatrices, param, SOL)
 
 % %Calculation of the surface of the 2D triangle of the surface
 indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
@@ -23,16 +23,16 @@ for ii=1:param.nfreq
                                                                FEmatrices.Nodes(FEmatrices.PlateIn,Plan2D(1)),...
                                                                FEmatrices.Nodes(FEmatrices.PlateIn,Plan2D(2)));
         P_inc(ii,jj) = 1i*2*pi*param.freq(ii)*Uortho(FEmatrices.PlateIn,ii,jj)'*...
-                       FEmatrices.Surf_matrix*Pressure_surface;
+                       FEmatrices.SurfIn_matrix*Pressure_surface;
     end
 end
 %--------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % Calculation of P_rad
-if strcmp(arg, 'std')
+if strcmp(param.STL.config, 'std')
     P_rad = std_method(FEmatrices, param, SOL);
-elseif strcmp(arg, 'rayleigh')
+elseif strcmp(param.STL.config, 'rayleigh')
     P_rad = rayleigh_method(FEmatrices, param, SOL);
 end
 %--------------------------------------------------------------------------
@@ -45,9 +45,17 @@ function P_rad = std_method(FEmatrices, param, SOL)
 P_rad = zeros(param.nfreq, param.ntheta);
 % Uortho: normal displacement of the plate
 Uortho = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
-Uortho(FEmatrices.plate_nodes,:,:) = SOL(normal_direction:3:3*length(FEmatrices.plate_nodes),:,:);
+Uortho(FEmatrices.plate_nodes,:,:) = SOL(FEmatrices.normal_direction:3:3*length(FEmatrices.plate_nodes),:,:);
 
+pressure = SOL(FEmatrices.indexPlateExt,:,:);
 
+for ii=1:param.nfreq
+    for jj=1:param.ntheta
+        P_rad(ii,jj) = (-1i*2*pi*param.freq(ii))*Uortho(FEmatrices.PlateExt,ii,jj)'*...
+                            FEmatrices.SurfExt_matrix*pressure(:,ii,jj); % the - in front 
+                        % of the 1i is the conplex conjuguate
+    end
+end
 
 end
 

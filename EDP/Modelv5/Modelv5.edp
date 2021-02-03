@@ -82,7 +82,7 @@ VhF p,v;
 
 
 real Lbg = 0.5;
-real lpml = 0.5;
+real lpml = 1;
 real lplate = 0.2;
 
 real Lbg1x = lplate;
@@ -93,8 +93,8 @@ real Lbg1z = Lbg;
 real Lbg2z = Lbg+lpml;
 
 real km=2.5;
-real sigma1 = 3.45;
-real sigma2 = 2.3;
+real sigma1 = 7.67;
+real sigma2 = 6.14;
 
 func PML1x=sigma1/(Lbg2x-abs(x)) ;
 func decay1x=(region==PML) ? 1+1i*PML1x/km : 1 ;//
@@ -135,8 +135,9 @@ varf qpmli(p, v) = int3d(Th, PML, ROOM)( p*v*imag( decay1x*decay1y*decay1z ) );
 
 
 //Coupling
-varf c(p, v) = int2d(Th, extplate)( p*v );   // the normal vector to the surface is n = Uz
+varf c1(p, v) = int2d(Th, inplate)( p*v );   // the normal vector to the surface is n = Uz
 
+varf c2(p, v) = int2d(Th, extplate)( p*v );   // the normal vector to the surface is n = Uz
 
 //--------------------------------------------------------------------------
 // Define matrices
@@ -152,7 +153,8 @@ matrix Hpmli = hpmli(VhF, VhF);
 matrix Qpmlr = qpmlr(VhF, VhF);
 matrix Qpmli = qpmli(VhF, VhF);
 //Coupling
-matrix C = c(VhF, VhF);
+matrix C1 = c1(VhF, VhF);
+matrix C2 = c2(VhF, VhF);
 
 //--------------------------------------------------------------------------
 // Export Data
@@ -188,8 +190,12 @@ ofstream fout(root+"Qpmli.txt");
 fout << Qpmli << endl;
 }
 {
-ofstream fout(root+"C.txt");
-fout << C << endl;
+ofstream fout(root+"C1.txt");
+fout << C1 << endl;
+}
+{
+ofstream fout(root+"C2.txt");
+fout << C2 << endl;
 }
 
 
