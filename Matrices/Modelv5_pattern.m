@@ -18,7 +18,7 @@ Hpmlr  = listLHS{4};
 Hpmli  = listLHS{5};
 Qpmlr  = listLHS{6};
 Qpmli  = listLHS{7};
-Ctmp1   = listLHS{8}; % coupling matrix
+Ctmp1   = listLHS{8};
 Ctmp2   = listLHS{9}; % coupling matrix
 
 %connectivity
@@ -50,7 +50,9 @@ end
 
 
 % plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
+
 % plot3(FEmatrices.Nodes(FEmatrices.ROOM_nodes,1),FEmatrices.Nodes(FEmatrices.ROOM_nodes,2),FEmatrices.Nodes(FEmatrices.ROOM_nodes,3),'+');
+
 % plot3(FEmatrices.Nodes(FEmatrices.PlateIn,1),FEmatrices.Nodes(FEmatrices.PlateIn,2),FEmatrices.Nodes(FEmatrices.PlateIn,3),'+');
 
 

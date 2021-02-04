@@ -3,7 +3,7 @@ SetFactory("OpenCASCADE");
 
 plate_thickness=0.004;
 L=0.4;
-sizemesh = 0.015;
+sizemesh = 0.02;
 
 Point(1) = {-L/2, -L/2, 0, sizemesh};
 //+
@@ -79,9 +79,9 @@ Volume(1) = {1};
 
 
 //+
-Physical Surface("inplate",2) = {1};
+Physical Surface("inplate",2) = {2};
 //+
-Physical Surface("extplate",3) = {2};
+Physical Surface("extplate",3) = {1};
 //+
 Physical Surface("embedding",4) = {4, 5, 6, 3};
 //+

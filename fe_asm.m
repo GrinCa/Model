@@ -1,6 +1,6 @@
 function RHS = fe_asm(FEmatrices,param,freq,theta,derivative_order)
 
-[element_data, element_center, Plan2D] = get_element_surface(FEmatrices, param);
+[element_data, element_center, Plan2D, normal_direction] = get_element_surface(FEmatrices, param);
 
 RHS = zeros(FEmatrices.size_system,1);
 
@@ -9,6 +9,8 @@ gauss_point = [1.0/3.0;...
 gauss_coeff =  1.0/2.0;
 
 
+Area = 0;
+
 for n=1:length(element_data)
     element_coordinates = [FEmatrices.Nodes(element_data(n,:), Plan2D(1)),...
                            FEmatrices.Nodes(element_data(n,:), Plan2D(2))];
@@ -16,22 +18,25 @@ for n=1:length(element_data)
     if detJ == 0
         disp("[WARNING] |J| <= 0")
     end
+    Area =Area + detJ;
     X = N'*element_coordinates;
-    for m=1:size(element_data,2)
-        RHS(element_data(n,m)) = RHS(element_data(n,m)) + ...
-                                 FEmatrices.RHScoeffderiv_fun{1,derivative_order(1),derivative_order(2)}(freq,...
-                                                                                                         theta,...
-                                                                                                         X(1),...
-                                                                                                         X(2))*...
-                                 N(m)*...
-                                 detJ*...
-                                 gauss_coeff;
+    for m=1:size(element_data,2)% == 3 for P1
+        index = 3*(element_data(n,m)-1)+normal_direction;
+        RHS(index) = RHS(index) + ...
+                     FEmatrices.RHScoeffderiv_fun{1,derivative_order(1),...
+                                                    derivative_order(2)}(freq,...
+                                                                         theta,...
+                                                                         X(1),...
+                                                                         X(2))*...
+                     N(m)*...
+                     detJ*...
+                     gauss_coeff;
     end
 end
            
 end
 
-function [element_data, element_center, plan2D] = get_element_surface(FEmatrices, param)
+function [element_data, element_center, plan2D, normal_direction] = get_element_surface(FEmatrices, param)
 % list_nodes_surface: list of the nodes belonging to the surface
 % element_data: 2D array (as much rows as elements, column1 = node1
 %                                                   column2 = node2
@@ -40,11 +45,11 @@ connectivity_table = FEmatrices.connectivity+1;%FreeFem++ indexes nodes with 0 a
 list_nodes_surface = FEmatrices.PlateIn;
 element_data = [];
 table_elements_test = zeros(size(connectivity_table));
-connectivity_table = sort(connectivity_table,2);
-for ii=1:length(list_nodes_surface)
-    for jj=1:size(connectivity_table,2)
-        idx = find(connectivity_table(:,jj)==list_nodes_surface(ii));
-        table_elements_test(idx,jj) = list_nodes_surface(ii);
+%connectivity_table = sort(connectivity_table,2);
+for ii=1:size(connectivity_table,2)
+    for jj=1:length(list_nodes_surface)
+        idx = find(connectivity_table(:,ii)==list_nodes_surface(jj));
+        table_elements_test(idx,ii) = list_nodes_surface(jj);
     end
 end
 
@@ -73,7 +78,7 @@ plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan
                            % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
   
                            
-%normal_direction = find(indicator_Plan == min(indicator_Plan));
+normal_direction = find(indicator_Plan == min(indicator_Plan));
 
 % %display part
 % for ii=1:size(element_data,1)

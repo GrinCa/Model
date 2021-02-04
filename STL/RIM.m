@@ -15,7 +15,7 @@ rayleigh_matrices = cell(param.nfreq,1);
 n_elem = length(element_data);
 
 unit = ones(size(FEmatrices.SurfExt_matrix,1),1);
-Se = unit'*FEmatrices.SurfExt_matrix*unit / n_elem;
+Se = abs( unit'*FEmatrices.SurfExt_matrix*unit / n_elem );
 
 disp("Start Rayleigh calculation");
 

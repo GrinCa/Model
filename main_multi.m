@@ -39,7 +39,7 @@ addpath(genpath(strcat(pwd,'/',Config)));
 % Input data for the problem
 %--------------------------------------------------------------------------
 % Input files for mesh and FE matrices
-mesh.file = 'Modelv5';
+
 sizemesh = load('sizemesh.txt');
 sizemesh = sizemesh(end);
 config = str2func([mesh.file '_config']);
@@ -113,7 +113,6 @@ if flag.recalculated
        id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
     end
 
-   
 
     %--------------------------------------------------------------------------
     % Calculate WCAWE parametric sweep

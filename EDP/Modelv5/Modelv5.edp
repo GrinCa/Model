@@ -92,7 +92,7 @@ real Lbg2y = lplate+lpml;
 real Lbg1z = Lbg;
 real Lbg2z = Lbg+lpml;
 
-real fstar = 100; //Hz
+real fstar = 20; //Hz
 
 real km = 2*pi*fstar/340.0;
 real sigma1 = log(1e3)/(lplate+lpml);
@@ -115,7 +115,7 @@ func decay1z=(region==PML) ? 1-1i*PML1z/km : 1 ;//
 
 //Solid
 varf kr([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
-	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
+	  	            		  	                    2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
 				                  on(embedding, u1=0, u2=0, u3=0);
 
 varf ki([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( eta*(lambda*div(u1,u2,u3)*div(v1,v2,v3) +
@@ -127,11 +127,11 @@ varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] )
 
 //Fluid
 varf hpmlr(p, v) = int3d(Th, PML, ROOM)( dx(p)*dx(v)*real( decay1y*decay1z/decay1x ) +
-					        		   dy(p)*dy(v)*real( decay1x*decay1z/decay1y ) +
-					        		   dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );
+					        		     dy(p)*dy(v)*real( decay1x*decay1z/decay1y ) +
+					        		     dz(p)*dz(v)*real( decay1x*decay1y/decay1z ) );
 varf hpmli(p, v) = int3d(Th, PML, ROOM)( dx(p)*dx(v)*imag( decay1y*decay1z/decay1x ) +
-			       		   			   dy(p)*dy(v)*imag( decay1x*decay1z/decay1y ) +
-			   	   		   			   dz(p)*dz(v)*imag( decay1x*decay1y/decay1z ) );
+			       		   			     dy(p)*dy(v)*imag( decay1x*decay1z/decay1y ) +
+			   	   		   			     dz(p)*dz(v)*imag( decay1x*decay1y/decay1z ) );
 
 varf qpmlr(p, v) = int3d(Th, PML, ROOM)( p*v*real( decay1x*decay1y*decay1z ) );
 varf qpmli(p, v) = int3d(Th, PML, ROOM)( p*v*imag( decay1x*decay1y*decay1z ) );
