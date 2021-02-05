@@ -6,7 +6,7 @@ l_ROOMfield = 0.5;
 L_PML = 0.5;
 l_plate = 0.2;
 coeff = 8;
-sizemesh = 0.02;
+sizemesh = 0.01;
 
 Point(1) = {l_plate, l_plate, 0, sizemesh};
 //+

@@ -1,4 +1,4 @@
-function FEmatrices = Modelv3_pattern(FEmatrices,listLHS,param,FILENAME)
+function FEmatrices = Modelv4_pattern(FEmatrices,listLHS,param,FILENAME)
 
 ndof = size(FEmatrices.Nodes,1);
 % regions
@@ -37,8 +37,8 @@ end
 
 
 % plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
-% plot3(FEmatrices.Nodes(plate_nodes,1),FEmatrices.Nodes(plate_nodes,2),FEmatrices.Nodes(plate_nodes,3),'+');
-% plot3(FEmatrices.Nodes(FEmatrices.field,1),FEmatrices.Nodes(FEmatrices.field,2),FEmatrices.Nodes(FEmatrices.field,3),'+');
+% plot3(FEmatrices.Nodes(FEmatrices.plate_nodes,1),FEmatrices.Nodes(FEmatrices.plate_nodes,2),FEmatrices.Nodes(FEmatrices.plate_nodes,3),'+');
+% plot3(FEmatrices.Nodes(FEmatrices.embedding,1),FEmatrices.Nodes(FEmatrices.embedding,2),FEmatrices.Nodes(FEmatrices.embedding,3),'+');
 
 % indexing of the differents subspaces for partitionning
 FEmatrices.indexu1        = 1:3:length(tab_plate);
@@ -48,7 +48,7 @@ FEmatrices.indexu3        = 3:3:length(tab_plate);
 FEmatrices.SurfIn_matrix = C(FEmatrices.PlateIn, FEmatrices.PlateIn);
 
 
-Kglob = Kr(tab_plate,tab_plate) + 1i*Ki(tab_plate,tab_plate);
+Kglob = Kr(tab_plate,tab_plate);% + 1i*Ki(tab_plate,tab_plate);
 Mglob = M(tab_plate,tab_plate);
 
 FEmatrices.LHS = {Kglob,Mglob};

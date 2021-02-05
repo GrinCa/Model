@@ -60,7 +60,7 @@ rangefreq = range{1};
 rangetheta = range{2};
 
 
-SOLUTION = real(SOL(:,:,:));
+SOLUTION = abs(SOL(:,:,:));
 
 for ii=rangefreq
     for jj=rangetheta
@@ -78,7 +78,7 @@ for ii=rangefreq
             elseif strcmp(PARTITION{n}{1},'vector')
                 text_data = convert_vector(FEmatrices,text_data,SOLUTION,{ii,jj},PARTITION{n}{2},PARTITION{n}{3},PARTITION{n}{4});
             elseif strcmp(PARTITION{n}{1},'data')
-                text_data = convert_given_data(FEmatrices,text_data,real(PARTITION{n}{2}(:,ii,jj)),PARTITION{n}{3});
+                text_data = convert_given_data(FEmatrices,text_data,abs(PARTITION{n}{2}(:,ii,jj)),PARTITION{n}{3});
             end
         end
         fprintf(fileID,text_data);

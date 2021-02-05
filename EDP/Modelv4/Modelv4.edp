@@ -28,6 +28,7 @@ int extplate = 3;
 int embedding = 4;
 
 
+
 //boundary label
 int[int] boundaryLabel(3);
 boundaryLabel(0) = inplate;
@@ -41,7 +42,7 @@ boundaryLabel(2) = embedding;
 //--------------------------------------------------------------------------
 
 real E = 2e9;
-real nu = 0.37;
+real nu = 0.3;
 real rhoS = 1200;
 real eta = 5e-2;
 

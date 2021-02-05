@@ -9,7 +9,7 @@ flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
@@ -42,8 +42,8 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 20;
-param.fmax = 20;
+param.fmin = 40;
+param.fmax = 40;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 8; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range

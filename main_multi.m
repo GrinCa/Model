@@ -107,6 +107,8 @@ if flag.recalculated
                id.RHS = fe_asm(FEmatrices,param,param.freq(ii),param.theta(jj),[1 1]);
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
+               compliance = (FEmatrices.LHS{1} - (2*pi*param.freq(ii))^2*FEmatrices.LHS{2})*resp_P;
+               disp(['Fr = ',num2str(norm(sum(compliance)))]);
                SOLFE(:,ii,jj) = resp_P;
            end
        end
@@ -425,6 +427,11 @@ if flag.calculateTL
     show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
     
     
+end
+
+
+if flag.eigen
+    eigs(LHS{1},LHS{2},6,'sm')
 end
 
 

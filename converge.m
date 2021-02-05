@@ -24,7 +24,7 @@ Geofile = mesh.file;
 % NOTE : If the size of elastic and acoustic is different, the mesh
 % elements won't be regular, which implies that the mean quadratic pressure
 % is no longer a good indicator.
-sizemesh = [0.020];
+sizemesh = [0.015];
 file_sizemesh = fopen('sizemesh.txt','wt');
 
 n_mesh = length(sizemesh(1,:));

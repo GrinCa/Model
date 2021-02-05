@@ -44,7 +44,7 @@ boundaryLabel(2) = ROOMPML;
 //--------------------------------------------------------------------------
 
 real E = 2e9;
-real nu = 0.37;
+real nu = 0.3;
 real rhoS = 1200;
 real eta = 5e-2;
 
