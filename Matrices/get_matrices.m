@@ -1,5 +1,7 @@
 function [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param)
 
+path_soft = getpath();
+
 for ii=1:length(param.matrix_names)
     param.matrix_names{ii} = strcat(mesh.file,'/',param.matrix_names{ii});
 end
@@ -14,7 +16,7 @@ if (flag.rerun) % EDP updated and/or mesh updated
    disp('************************');
    disp('*Rerun FreeFem++ script*');
    disp('************************');
-   edpcommand = strcat('FreeFem++'," ",'EDP/', mesh.file, '/', mesh.file,'.edp');
+   edpcommand = strcat([path_soft.freefem,' ','EDP/', mesh.file, '/', mesh.file,'.edp']);
    system(edpcommand);
    timing.freefem = cputime-t_0;
    disp('*********************************************************');

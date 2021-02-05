@@ -10,6 +10,7 @@
 % FreeFem. The algorithm is likely to fail if the version of Gmsh is higher
 % than 3.0.6
 
+
 clear all;
 
 
@@ -61,10 +62,11 @@ for kk=1:n_mesh
     %save sizemesh to acces in the main_multi.m file.
     fprintf(file_sizemesh,[num2str(sizemesh(1,kk)),'\n']);
     
+    path_soft = getpath();
     
     % compile .geo file
     disp('Compile .geo file...');
-    command = ['/home/julien/Documents/Softwares/gmsh-3.0.6/bin/gmsh -3 ',path,Geofile,'.geo ','-o ',path,Geofile,'.msh']; 
+    command = [path_soft.gmsh,' -3 ',path,Geofile,'.geo ','-o ',path,Geofile,'.msh'];
     % version gmsh : 3.0.6, whiwh match with FreeFem++ 4.1. Antother
     % version could not work
     system(command);
