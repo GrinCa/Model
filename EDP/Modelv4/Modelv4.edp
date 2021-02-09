@@ -60,14 +60,16 @@ macro epsilon(u1,u2,u3)  [dx(u1),
 
 macro div(u1,u2,u3) ( dx(u1)+dy(u2)+dz(u3) ) // EOM -- End Of Macro
 
+macro Grad(p) [dx(p),dy(p),dz(p)] // EOM -- End Of Macro
+
 //--------------------------------------------------------------------------
 // Define finite element space, solid and fluid
 //--------------------------------------------------------------------------
 
-fespace VhS(Th,[P1,P1,P1]);
+fespace VhS(Th,[P2,P2,P2]);
 VhS [u1,u2,u3], [v1,v2,v3];
 
-fespace Vh(Th,P1);
+fespace Vh(Th,P2);
 Vh u,v;
 
 //--------------------------------------------------------------------------
@@ -75,16 +77,18 @@ Vh u,v;
 //--------------------------------------------------------------------------
 
 //Solid
-varf kr([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
-	  	            		  	                    2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
-				                  on(embedding, u1=0, u2=0, u3=0);
-
-varf ki([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( eta*( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
-	  	            		  	                          2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) );
-
-varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
+varf kr([u1,u2,u3], [v1,v2,v3]) = int3d(Th)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+				  	2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) + 
+				  on(embedding, u1=0.0, u2=0.0, u3=0.0);
 
 
+varf ki([u1,u2,u3], [v1,v2,v3]) = int3d(Th)( eta*( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
+	  	            		  	                   2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) );
+
+varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
+
+//
+//	  	            		  	                    
 
 varf c(u, v) = int2d(Th, inplate)( u*v );
 

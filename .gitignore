@@ -2,3 +2,4 @@ sizemesh.txt
 Matrices/**/
 Geometry/**/*.msh
 Mesh/**/
+DataMap/**/

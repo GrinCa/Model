@@ -88,7 +88,6 @@ if flag.recalculated
        disp('**************************');
        disp('* Compute FE calculation *');
        disp('**************************');
-       t_FE = cputime;
        SOLFE = zeros(FEmatrices.size_system,param.nfreq,param.ntheta); %size ndof,nfreq
        % Parametric loop calculation
        id = initmumps;
@@ -104,12 +103,9 @@ if flag.recalculated
                   Aglob = Aglob + param.coeff_LHS{kk}(param.freq(ii))*LHS{kk};
                end
                id.JOB = 5;
-               %[id.RHS,BG_field(FEmatrices.field,ii,jj)] = build_RHS(param.freq(ii),param.theta(jj),FEmatrices,[1,1],param);
-               id.RHS = fe_asm(FEmatrices,param,param.freq(ii),param.theta(jj),[1 1]);
+               id.RHS = FE_AsmP2(FEmatrices,param,param.freq(ii),param.theta(jj),[1 1]);
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
-               compliance = (FEmatrices.LHS{1} - (2*pi*param.freq(ii))^2*FEmatrices.LHS{2})*resp_P;
-               disp(['Fr = ',num2str(norm(sum(compliance)))]);
                SOLFE(:,ii,jj) = resp_P;
            end
        end
@@ -319,7 +315,7 @@ if flag.convert2VTK
     if flag.calculateFE
         SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
         SOLFE = SOLFE{1};      
-        convertGEO2VTK('linear',FEmatrices,mesh,sizemesh,SOLFE,param.VTK.PARTITION,param,param.VTK.range);
+        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,param.VTK.PARTITION,param,param.VTK.range);
     end
 end
 
@@ -432,12 +428,11 @@ end
 
 
 if flag.eigen
-    eigs(LHS{1},LHS{2},6,'sm')
+    eigs(LHS{1},LHS{2},10,'sm')
 end
 
 
 if flag.converge_sizemesh
-
     sizemesh_file = load('sizemesh.txt');
     meanFE = cell(length(sizemesh_file),1);
     title_VALUES_1 = cell(length(sizemesh_file),1);

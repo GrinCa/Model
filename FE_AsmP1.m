@@ -1,4 +1,4 @@
-function RHS = fe_asm(FEmatrices,param,freq,theta,derivative_order)
+function RHS = FE_AsmP1(FEmatrices,param,freq,theta,derivative_order)
 
 [element_data, element_center, Plan2D, normal_direction] = get_element_surface(FEmatrices, param);
 

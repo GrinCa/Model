@@ -1,4 +1,4 @@
-function convertGEO2VTK(kind,FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
+function convertGEO2VTK(FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
 
 %##########################################################################
 %Please read the following lines for further informations
@@ -32,11 +32,11 @@ function convertGEO2VTK(kind,FEmatrices,mesh,sizemesh,SOL,PARTITION,param,range)
 FILENAME = mesh.file;
 connectivity_table = load(['Matrices/',FILENAME,'/connectivity_table.txt']);
 
-if strcmp(kind,'linear')
+if strcmp(param.VTK.config,'linear')
     linear_data = {4, 10};
     text_field = get_text_field(linear_data,FEmatrices.Nodes,connectivity_table,FILENAME);
     convertVTK3(FEmatrices,text_field,SOL,PARTITION,FILENAME,param,range,sizemesh)
-elseif strcmp(kind,'quadratic')
+elseif strcmp(param.VTK.config,'quadratic')
     quadratic_data = {10, 24};
     connectivity_table = connectivity_table(:,[1 2 3 4 5 8 6 7 9 10]);%reordering tetrahedron
     text_field = get_text_field(quadratic_data,FEmatrices.Nodes,connectivity_table,FILENAME);
@@ -107,7 +107,7 @@ for ii=1:ndof
                               num2str(Nodes(ii,3)),'\n']];
 end
 
-disp('*** Initialize conversion 3D (linear elements)***');
+disp('*** Initialize conversion 3D***');
 text_field = [text_field ['CELLS ',num2str(size(connectivity_table,1)),' ',...
                                    num2str((specific_data{1}+1)*size(connectivity_table,1)),'\n']];
 for ii=1:size(connectivity_table,1)

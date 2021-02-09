@@ -48,7 +48,7 @@ FEmatrices.indexu3        = 3:3:length(tab_plate);
 FEmatrices.SurfIn_matrix = C(FEmatrices.PlateIn, FEmatrices.PlateIn);
 
 
-Kglob = Kr(tab_plate,tab_plate);% + 1i*Ki(tab_plate,tab_plate);
+Kglob = Kr(tab_plate,tab_plate) + 1i*Ki(tab_plate,tab_plate);
 Mglob = M(tab_plate,tab_plate);
 
 FEmatrices.LHS = {Kglob,Mglob};

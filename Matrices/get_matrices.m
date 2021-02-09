@@ -3,7 +3,7 @@ function [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param)
 path_soft = getpath();
 
 for ii=1:length(param.matrix_names)
-    param.matrix_names{ii} = strcat(mesh.file,'/',param.matrix_names{ii});
+    param.matrix_names{ii} = strcat('Matrices/',mesh.file,'/',param.matrix_names{ii});
 end
 
 
