@@ -6,7 +6,7 @@ l_ROOMfield = 0.5;
 L_PML = 0.5;
 l_plate = 0.2;
 coeff = 8;
-sizemesh = 0.01;
+sizemesh = 0.02;
 
 Point(1) = {l_plate, l_plate, 0, sizemesh};
 //+
@@ -763,3 +763,6 @@ Physical Volume("plate",5) = {19};
 Physical Volume("ROOM",6) = {12};
 //+
 Physical Volume("PML",7) = {14, 15, 16, 10, 9, 18, 7, 13, 11, 8, 17, 4, 1, 5, 3, 2, 6};
+
+
+

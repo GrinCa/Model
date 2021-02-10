@@ -38,27 +38,41 @@ FEmatrices.PlateIn   = find(labels_cell{1});
 FEmatrices.PlateExt  = find(labels_cell{2});
 FEmatrices.ROOMPML   = find(labels_cell{3});
 
+% % %Calculation of the surface of the 2D triangle of the surface
+indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
+FEmatrices.plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
+                           % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
+FEmatrices.normal_direction = find(indicator_Plan == min(indicator_Plan));
 
 tab_plate = [];
+FEmatrices.indexPlateIn  = zeros(length(FEmatrices.PlateIn),1);
+FEmatrices.indexPlateExt = zeros(length(FEmatrices.PlateExt),1);
+ci=1;
+ce=1;
 for ii=1:length(FEmatrices.plate_nodes)
     for jj=1:3
         tab_plate = [tab_plate 3*(FEmatrices.plate_nodes(ii)-1)+jj];
     end
+    if ci <= length(FEmatrices.PlateIn)
+        if FEmatrices.plate_nodes(ii) == FEmatrices.PlateIn(ci)
+            FEmatrices.indexPlateIn(ci) = 3*(ii-1) + FEmatrices.normal_direction; % it supposes the normal direction is z
+            ci=ci+1;
+        end
+    end
+    if ce <= length(FEmatrices.PlateExt)
+        if FEmatrices.plate_nodes(ii) == FEmatrices.PlateExt(ce)
+            FEmatrices.indexPlateExt(ce) = 3*(ii-1) + FEmatrices.normal_direction; % it supposes the normal direction is z
+            ce=ce+1;
+        end
+    end
 end
-
-
-
 
 % plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
-
 % plot3(FEmatrices.Nodes(FEmatrices.ROOM_nodes,1),FEmatrices.Nodes(FEmatrices.ROOM_nodes,2),FEmatrices.Nodes(FEmatrices.ROOM_nodes,3),'+');
-
 % plot3(FEmatrices.Nodes(FEmatrices.PlateIn,1),FEmatrices.Nodes(FEmatrices.PlateIn,2),FEmatrices.Nodes(FEmatrices.PlateIn,3),'+');
-
-
-for ii=1:length(FEmatrices.PlateExt)
-    FEmatrices.indexPlateExt(ii) = length(tab_plate)+find(FEmatrices.SIS==FEmatrices.PlateExt(ii)); 
-end
+% plot3(FEmatrices.Nodes(FEmatrices.SIS,1),FEmatrices.Nodes(FEmatrices.SIS,2),FEmatrices.Nodes(FEmatrices.SIS,3),'+');
 
 % indexing of the differents subspaces for partitionning
 FEmatrices.indexu1        = 1:3:length(tab_plate);

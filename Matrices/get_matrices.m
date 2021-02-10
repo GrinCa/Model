@@ -53,7 +53,7 @@ for ii=1:length(param.matrix_names)
 end
 
 % Nodes
-Nodes = load(strcat(mesh.file,'/',"Nodes.txt"));
+Nodes = load(strcat('Matrices/',mesh.file,'/',"Nodes.txt"));
 ndof = size(Nodes,1);
 
 %--------------------------------------------------------------------------

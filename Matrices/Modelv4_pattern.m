@@ -27,14 +27,29 @@ FEmatrices.PlateIn   = find(labels_cell{1});
 FEmatrices.PlateExt  = find(labels_cell{2});
 FEmatrices.embedding = find(labels_cell{3});
 
+% % %Calculation of the surface of the 2D triangle of the surface
+indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
+                  norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
+FEmatrices.plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
+                           % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
+FEmatrices.normal_direction = find(indicator_Plan == min(indicator_Plan));
 
-tab_plate = [];
+
+tab_plate = zeros(1,length(FEmatrices.plate_nodes));
+FEmatrices.indexPlateIn = zeros(length(FEmatrices.PlateIn),1);
+c=1;
 for ii=1:length(FEmatrices.plate_nodes)
     for jj=1:3
-        tab_plate = [tab_plate 3*(FEmatrices.plate_nodes(ii)-1)+jj];
+        tab_plate(3*(ii-1)+jj) =  3*(FEmatrices.plate_nodes(ii)-1)+jj;
+    end
+    if c <= length(FEmatrices.PlateIn)
+        if FEmatrices.plate_nodes(ii) == FEmatrices.PlateIn(c)
+            FEmatrices.indexPlateIn(c) = 3*ii; % it supposes the normal direction is z
+            c=c+1;
+        end
     end
 end
-
 
 % plot3(FEmatrices.Nodes(FEmatrices.PlateExt,1),FEmatrices.Nodes(FEmatrices.PlateExt,2),FEmatrices.Nodes(FEmatrices.PlateExt,3),'+');
 % plot3(FEmatrices.Nodes(FEmatrices.plate_nodes,1),FEmatrices.Nodes(FEmatrices.plate_nodes,2),FEmatrices.Nodes(FEmatrices.plate_nodes,3),'+');
@@ -46,7 +61,6 @@ FEmatrices.indexu2        = 2:3:length(tab_plate);
 FEmatrices.indexu3        = 3:3:length(tab_plate);
 
 FEmatrices.SurfIn_matrix = C(FEmatrices.PlateIn, FEmatrices.PlateIn);
-
 
 Kglob = Kr(tab_plate,tab_plate) + 1i*Ki(tab_plate,tab_plate);
 Mglob = M(tab_plate,tab_plate);

@@ -43,10 +43,10 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 200;
-param.fmax = 200;
+param.fmin = 10;
+param.fmax = 150;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 8; % 20
+param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -112,7 +112,7 @@ param.coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction
 param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
                       "C.txt"];
                   
-param.STL.config = 'std';
+param.STL.config = 'RAYLEIGH';
 param.VTK.config = 'quadratic';
 
 end

@@ -12,10 +12,11 @@ rayleigh_matrices = cell(param.nfreq,1);
 %     hold on
 % end
 
-n_elem = length(element_data);
+n_elem = size(element_data,1);
 
-unit = ones(size(FEmatrices.SurfExt_matrix,1),1);
-Se = abs( unit'*FEmatrices.SurfExt_matrix*unit / n_elem );
+unit = ones(size(FEmatrices.SurfIn_matrix,1),1);
+Se = abs( unit'*FEmatrices.SurfIn_matrix*unit / n_elem ); % mean area of an 
+                                                          % element surface
 
 disp("Start Rayleigh calculation");
 
@@ -48,9 +49,8 @@ function [element_data, element_center] = get_element_surface(FEmatrices, param)
 connectivity_table = FEmatrices.connectivity+1;%FreeFem++ indexes nodes with 0 as first value (0+1=first value in Matlab)
 list_nodes_surface = FEmatrices.PlateExt;
 element_data = [];
-table_elements_test = zeros(size(connectivity_table,1),...
-                            size(connectivity_table,2));
-connectivity_table = sort(connectivity_table,2);
+table_elements_test = zeros( size(connectivity_table) );
+
 for ii=1:length(list_nodes_surface)
     for jj=1:size(connectivity_table,2)
         idx = find(connectivity_table(:,jj)==list_nodes_surface(ii));
@@ -61,7 +61,7 @@ end
 
 for ii=1:size(table_elements_test,1)
     idx = find(table_elements_test(ii,:));
-    if length(idx) == 3 % 3 nodes on the surface(for P1 triangles)
+    if length(idx) == 6 % 3 for P1, 6 for P2
         element_data = [element_data;table_elements_test(ii,idx)];
     end
 end
@@ -75,16 +75,11 @@ for ii=1:size(element_data,1)
 end
 
 % 
-% % %Calculation of the surface of the 2D triangle of the surface
-% indicator_Plan = [norm(FEmatrices.Nodes(FEmatrices.PlateExt,1)-FEmatrices.Nodes(FEmatrices.PlateExt(1),1)),...
-%                   norm(FEmatrices.Nodes(FEmatrices.PlateExt,2)-FEmatrices.Nodes(FEmatrices.PlateExt(1),2)),...
-%                   norm(FEmatrices.Nodes(FEmatrices.PlateExt,3)-FEmatrices.Nodes(FEmatrices.PlateExt(1),3))];
-% Plan2D = find(indicator_Plan>min(indicator_Plan)); % determines whether the plan is (x,y) (x,z) (y,z) ...
-%                            % |_>> min(indicator_Plan) = 0 if there is no "numerical epsilon"
+
 %  
-
-
-%display part
+% 
+% 
+% %display part
 % for ii=1:size(element_data,1)
 %     X = FEmatrices.Nodes(element_data(ii,:),plan2D(1));
 %     Y = FEmatrices.Nodes(element_data(ii,:),plan2D(2));

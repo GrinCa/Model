@@ -11,6 +11,8 @@ flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 
+flag.eigen = 0;
+
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
 flag.plotMQP = 0;
@@ -42,10 +44,10 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 40;
-param.fmax = 40;
+param.fmin = 100;
+param.fmax = 100;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 8; % 20
+param.freqincr = 5; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -112,6 +114,7 @@ param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
                       "Qpmlr.txt","Qpmli.txt",...
                       "C1.txt","C2.txt"];
                   
-param.STL.config = 'std';
+param.STL.config = 'PML';
+param.VTK.config = 'quadratic';
 
 end
