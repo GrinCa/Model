@@ -19,10 +19,11 @@ function show2d(VALUES,param,mesh,arg)
         plot(X{find(sizesubset>1)},VALUES{ii},'DisplayName',arg.label{ii});
         xlabel(xlabeltxt{find(sizesubset>1)});
         ylabel(arg.ylabel);
-        title(arg.title{ii});
         legend;
         hold on
     end
+    
+    title(arg.title);
     
     argtmp.gcf = gcf;
     argtmp.type = 'save_plot';

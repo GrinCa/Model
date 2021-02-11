@@ -21,8 +21,7 @@ for n=1:param.nfreqref
         RHS_tmp = zeros(FEmatrices.size_system,param.nvecfreq,param.nvectheta);
         for ii=1:param.nvecfreq
             for jj=1:param.nvectheta
-                %RHS_tmp(:,ii,jj) = build_RHS(param.freqref(n),param.thetaref(m),FEmatrices,[ii,jj],param);
-                RHS_tmp(:,ii,jj) = fe_asm(FEmatrices,param,param.freqref(n),param.thetaref(m),[ii,jj]);
+                RHS_tmp(:,ii,jj) = FE_AsmP2(FEmatrices,param,param.freqref(n),param.thetaref(m),[ii,jj]);
             end
         end
         RHSderiv{n,m} = RHS_tmp;

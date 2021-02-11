@@ -1,4 +1,4 @@
-function [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param)
+function [FEmatrices,ndof,flag] = get_matrices(FEmatrices,flag,mesh,param)
 
 path_soft = getpath();
 

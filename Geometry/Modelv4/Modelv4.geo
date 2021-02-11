@@ -3,7 +3,7 @@ SetFactory("OpenCASCADE");
 
 plate_thickness=0.004;
 L=0.4;
-sizemesh = 0.03;
+sizemesh = 0.07;
 
 Point(1) = {-L/2, -L/2, 0, sizemesh};
 //+
@@ -76,17 +76,17 @@ Surface Loop(1) = {1, 3, 2, 4, 5, 6};
 //+
 Volume(1) = {1};
 //+
-//Transfinite Surface {1};
+Transfinite Surface {1};
 //+
-//Transfinite Surface {2};
+Transfinite Surface {2};
 //+
-//Transfinite Surface {3};
+Transfinite Surface {3};
 //+
-//Transfinite Surface {4};
+Transfinite Surface {4};
 //+
-//Transfinite Surface {5};
+Transfinite Surface {5};
 //+
-//Transfinite Surface {6};
+Transfinite Surface {6};
 //+
 
 Physical Surface("inplate", 2) = {1};

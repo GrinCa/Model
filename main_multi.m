@@ -57,12 +57,15 @@ param = genfolders(mesh,param);
 %--------------------------------------------------------------------------
 param = build_interval(param);
 
+%-----------------------------------------------------------------------------------------
+[FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
+%-----------------------------------------------------------------------------------------
 
 %--------------------------------------------------------------------------
 % Matrices calculated with Freefem++
 %--------------------------------------------------------------------------
 if flag.getmatrices
-    [FEmatrices,ndof,flag] = get_matrices(flag,mesh,param);
+    [FEmatrices,ndof,flag] = get_matrices(FEmatrices,flag,mesh,param);
     Nodes = FEmatrices.Nodes;
     LHS = FEmatrices.LHS;
     nLHS = length(LHS);
@@ -70,10 +73,6 @@ if flag.getmatrices
     % Save data only for FE solution
     save(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat'],'FEmatrices','param');
 end
-
-%-----------------------------------------------------------------------------------------
-[FEmatrices.LHScoeffderiv_fun, FEmatrices.RHScoeffderiv_fun] = get_coeff_deriv_matrices();
-%-----------------------------------------------------------------------------------------
 
 if flag.recalculated
 
@@ -393,8 +392,8 @@ if flag.calculateTL
         end
     end
    
-    argcomp.zlabel = 'TL';
-    argcomp.title = 'MDWCAWE';
+    argcomp.ylabel = 'TL';
+    argcomp.title = 'Comparison FE MDWCAWE';
     argcomp.type = 'plotTL';
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_MDWCAWE';
@@ -402,8 +401,8 @@ if flag.calculateTL
     argcomp.external_plot.is_needed = false;
     show_graph(argcomp,VALUES_SOL(1,:),mesh,param);
     
-    argcomp.zlabel = 'TL';
-    argcomp.title = 'WCAWE';
+    argcomp.ylabel = 'TL';
+    argcomp.title = 'Comparison FE WCAWE';
     argcomp.type = 'plotTL';
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_WCAWE';
@@ -415,15 +414,13 @@ if flag.calculateTL
     argtmp.REF_SOLUTION = VALUES_SOL(1);
     argtmp.APPROX_SOLUTION = VALUES_SOL(1,2:end);
     argcomp.type = 'plotTL';
-    argcomp.zlabel = 'relative error';
+    argcomp.ylabel = 'relative error';
     argcomp.title = '';
     argcomp.split = 1;
     argcomp.name_plot = 'Relative_error';
     argcomp.label = VALUES_name(2:end);
     argcomp.external_plot.is_needed = false;
     show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
-    
-    
 end
 
 

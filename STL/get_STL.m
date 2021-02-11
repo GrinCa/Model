@@ -6,12 +6,6 @@ tau_theta = abs(P_rad./P_inc);
 
 TL = 10*log10(1./tau_theta);
 
-figure
-semilogy(param.freq, TL);
-xlabel('frequency (Hz)');
-ylabel('TL');
-
-saveas(gcf, 'TL_rayleigh.png');
 
 % tau = zeros(param.nfreq,1);
 % 
