@@ -6,9 +6,13 @@ param.filename = 'Modelv4';
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
-flag.calculateFE = 0;  % calculate FE solution, 
+flag.calculateFE = 1;  % calculate FE solution, 
 flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
+<<<<<<< HEAD
 flag.calculateWCAWE = 0; % calculate WCAWE solution
+=======
+flag.calculateWCAWE = 1; % calculate WCAWE solution
+>>>>>>> 9c34f16f376d72ab767aaf97ec2c10873d6dcd9c
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
@@ -22,7 +26,9 @@ flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
 
-flag.show_timing = 1;
+
+flag.show_timing = 0;
+
 
 
 flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
@@ -55,7 +61,7 @@ param.rho0 = 1.29; %kg/m3
 
 % Frequency range
 param.fmin = 1;
-param.fmax = 100;
+param.fmax = 50;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
