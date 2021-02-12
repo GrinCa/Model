@@ -10,6 +10,28 @@
 % FreeFem. The algorithm is likely to fail if the version of Gmsh is higher
 % than 3.0.6
 
+% Add folders for Mumps, WCAWE, and Mesh functions/files
+
+Meshfold = 'Matrices';
+WCAWEfold = 'WCAWE';
+Mumps = 'Mumps';
+DataMap = 'DataMap';
+Derivatives = 'Derivatives';
+STL = 'STL';
+Config = 'Config';
+Timing = 'Timing';
+PrePost = 'PrePost';
+
+addpath(genpath(strcat(pwd,'/',Meshfold)));
+addpath(genpath(strcat(pwd,'/',WCAWEfold)));
+addpath(genpath(strcat(pwd,'/',Mumps)));
+addpath(genpath(strcat(pwd,'/',DataMap)));
+addpath(genpath(strcat(pwd,'/',Derivatives)));
+addpath(genpath(strcat(pwd,'/',STL)));
+addpath(genpath(strcat(pwd,'/',Config)));
+addpath(genpath(strcat(pwd,'/',Timing)));
+addpath(genpath(strcat(pwd,'/',PrePost)));
+
 
 %clear all;
 
@@ -19,8 +41,6 @@ mesh.file = 'Modelv4';
 remesh = 1;
 
 if remesh
-
-Geofile = mesh.file;
 
 % both arrays stand for size of elastic and acoustic nodes respectively.
 % For each colum of both arrays, the main script will be run. Therefore it
@@ -39,8 +59,8 @@ keywords = {'sizemesh = '};
 n_key = length(keywords);
 
 % Import existing .geo file
-path = ['Geometry/',Geofile,'/'];
-fid = fopen([path,Geofile,'.geo'],'rt');
+path = ['Geometry/',mesh.file,'/'];
+fid = fopen([path,mesh.file,'.geo'],'rt');
 dataMesh = fread(fid);
 fclose(fid);
 dataMesh = char(dataMesh.');
@@ -58,7 +78,7 @@ for kk=1:n_mesh
 
         if current_val ~= sizemesh(ii,kk)
             dataMesh = strrep(dataMesh, dataMesh(startindkey:endind), [keywords{ii}, num2str(sizemesh(ii,kk)),';']);
-            fid = fopen([path,Geofile, '.geo'],'wt');
+            fid = fopen([path,mesh.file, '.geo'],'wt');
             fwrite(fid,dataMesh);
             fclose (fid);
         end
@@ -70,7 +90,7 @@ for kk=1:n_mesh
     
     % compile .geo file
     disp('Compile .geo file...');
-    command = [path_soft.gmsh,' -3 ',path,Geofile,'.geo ','-o ',path,Geofile,'.msh'];
+    command = [path_soft.gmsh,' -3 ',path,mesh.file,'.geo ','-o ',path,mesh.file,'.msh'];
     % version gmsh : 3.0.6, whiwh match with FreeFem++ 4.1. Antother
     % version could not work
     system(command);

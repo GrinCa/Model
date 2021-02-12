@@ -1,5 +1,7 @@
 function [flag, param] = Modelv5_config()
 
+param.filename = 'Modelv4';
+
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
@@ -9,7 +11,7 @@ flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
 flag.eigen = 0;
 
@@ -20,6 +22,8 @@ flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
+
+flag.show_timing = 0;
 
 
 flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
@@ -114,7 +118,7 @@ param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
                       "Qpmlr.txt","Qpmli.txt",...
                       "C1.txt","C2.txt"];
                   
-param.STL.config = 'PML';
+param.study = 'PML';
 param.VTK.config = 'quadratic';
 
 end

@@ -1,0 +1,113 @@
+//includes
+include "EDP/exports.idp"
+
+string root="Matrices/Elasticity/"; 
+
+// Parameters
+real E = 21e5;
+real nu = 0.28;
+
+real g = -1;
+
+
+
+// Mesh
+mesh Th = square(20, 20, [20*x,2*y-1]);
+
+// Fespace
+fespace VhS(Th, [P2,P2]);
+VhS [u, v], [uu, vv];
+fespace Vh(Th, P2);
+
+
+// Macro
+real sqrt2=sqrt(2.);
+macro epsilon(u1,u2) [dx(u1),dy(u2),(dy(u1)+dx(u2))/sqrt2] //
+// The sqrt2 is because we want: epsilon(u1,u2)'* epsilon(v1,v2) = epsilon(u): epsilon(v)
+macro div(u,v) ( dx(u)+dy(v) ) //
+
+// Problem
+real mu= E/(2*(1+nu));
+real lambda = E*nu/((1+nu)*(1-2*nu));
+
+
+varf k([u,v],[uu,vv]) = int2d(Th)( lambda * div(u, v) * div(uu, vv) + 2.*mu * ( epsilon(u,v)' * epsilon(uu,vv) ) ) + 
+   	 on(4, u=0, v=0);
+
+varf f([u,v],[uu,vv]) = int2d(Th)( g*vv );
+
+matrix K = k(VhS,VhS);
+
+real[int] F(2*Vh.ndof);
+F = f(0,VhS);
+
+real[int] sol(F.n);
+sol = K^-1*F;
+
+cout << sol'*sol << endl;
+
+real[int] a(Vh.ndof), b(Vh.ndof);
+
+for (int i=0;i<Vh.ndof;i++){
+	a(i) = sol(2*i);
+	b(i) = sol(2*i+1);
+}
+
+Vh ua, ub;
+ua[] = a;
+ub[] = b;
+/*
+real coef=100;
+mesh th1 = movemesh(Th, [x+ua*coef, y+ub*coef]);
+plot(th1,wait=1);
+*/
+
+real dmax = ub[].min;
+
+cout << "Max displacement: " << dmax << endl;
+
+matrix RHS = F;
+
+saveRegionLabels(Vh, root+"regions.txt");
+saveNodes(Vh,root+"Nodes.txt");
+saveConnectivity(Th, Vh, root+"connectivity_table.txt");
+
+
+// Eigen values
+int nev=6; // Number of requested eigenvalues near sigma
+
+real[int] ev(nev);  // To store the nev eigenvalue
+Vh[int] eV(nev);    // To store the nev eigenvector
+
+real sigma = 20.;
+
+varf op([u,v],[uu,vv]) = int2d(Th)( lambda * div(u, v) * div(uu, vv) + 
+				    2.*mu * ( epsilon(u,v)' * epsilon(uu,vv) ) -
+				    sigma*[u,v]'*[uu,vv]);
+
+varf m([u,v],[uu,vv]) = int2d(Th)( [u,v]'*[uu,vv] ); 
+
+matrix OP = op(VhS, VhS, solver=Crout, factorize=1);
+matrix M = m(VhS, VhS, solver=CG, eps=1e-20);
+
+int k=EigenValue(OP, M, sym=true, sigma=sigma, value=ev, vector=eV,
+   		 tol=1e-10, maxit=0, ncv=0);
+
+cout << "##############################################" << endl;
+for (int i=0;i<nev;i++){
+	cout << ev(i) << endl;
+}
+cout << "##############################################" << endl;
+
+{
+	ofstream fout(root+"K.txt");
+	fout<< K <<endl;
+}
+{
+	ofstream fout(root+"F.txt");
+	fout<< RHS <<endl;
+}
+
+
+
+

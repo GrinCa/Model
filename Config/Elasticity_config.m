@@ -1,18 +1,17 @@
-function [flag, param] = Modelv4_config()
-
-param.filename = 'Modelv4';
+function [flag, param] = Elasticity_config()
 
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
-flag.calculateFE = 0;  % calculate FE solution, 
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
+flag.calculateFE = 1;  % calculate FE solution, 
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
+
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
-flag.eigen = 0;
+flag.eigen = 1;
 
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
@@ -22,22 +21,13 @@ flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
 
-flag.show_timing = 1;
-
 
 flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
 % useful if you just post-process the results. Indeed, depending on the
 % model, it can be quite long to read the .txt file that contains the
 % matrices
 
-if flag.show_timing || ...
-        flag.converge || ...
-        flag.plotMQP || ...
-        flag.convert2VTK || ...
-        flag.calculateTL || ...
-        flag.converge_sizemesh ||...
-        flag.normalized_error
-    
+if flag.converge || flag.plotMQP || flag.convert2VTK || flag.calculateTL || flag.converge_sizemesh || flag.normalized_error
     flag.getmatrices = 0;
     flag.rerun = 0;
     flag.recalculated = 0;
@@ -54,10 +44,10 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 1;
-param.fmax = 100;
+param.fmin = 10;
+param.fmax = 10;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 2; % 20
+param.freqincr = 8; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -72,7 +62,7 @@ param.ntheta = length(param.theta);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [50];
+param.freqref = [225];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -90,8 +80,8 @@ param.interval_construct = {{[1]};
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 1;
-param.nvecfreqmax = 1;
+param.nvecfreqmin = 3;
+param.nvecfreqmax = 3;
 param.incrvecfreq = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
 
@@ -119,12 +109,8 @@ param.coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction
                                                                  param.direction_coeff(2)*x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
-                      "C.txt"];
+param.matrix_names = ["K.txt","F.txt"];
                   
-param.study = 'RAYLEIGH';
-param.VTK.config = 'quadratic';
-
+param.STL.config = 'std';
 
 end
