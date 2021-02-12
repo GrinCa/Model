@@ -26,6 +26,8 @@ DataMap = 'DataMap';
 Derivatives = 'Derivatives';
 STL = 'STL';
 Config = 'Config';
+Timing = 'Timing';
+PrePost = 'PrePost';
 
 addpath(genpath(strcat(pwd,'/',Meshfold)));
 addpath(genpath(strcat(pwd,'/',WCAWEfold)));
@@ -34,7 +36,8 @@ addpath(genpath(strcat(pwd,'/',DataMap)));
 addpath(genpath(strcat(pwd,'/',Derivatives)));
 addpath(genpath(strcat(pwd,'/',STL)));
 addpath(genpath(strcat(pwd,'/',Config)));
-
+addpath(genpath(strcat(pwd,'/',Timing)));
+addpath(genpath(strcat(pwd,'/',PrePost)));
 
 %--------------------------------------------------------------------------
 % Input data for the problem
@@ -46,6 +49,7 @@ sizemesh = sizemesh(end);
 config = str2func([mesh.file '_config']);
 [flag, param] = config();
 
+timing = containers.Map;
 
 % generation of the different folder to store data if they don't already exist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +79,7 @@ if flag.getmatrices
 end
 
 if flag.recalculated
-
+    
     %--------------------------------------------------------------------------
     % Calculate reference finite element parametric sweep
     %--------------------------------------------------------------------------
@@ -84,18 +88,19 @@ if flag.recalculated
     BG_field = zeros(size(FEmatrices.Nodes,1),param.nfreq,param.ntheta);
 
     if flag.calculateFE == 1
-       disp('**************************');
-       disp('* Compute FE calculation *');
-       disp('**************************');
-       SOLFE = zeros(FEmatrices.size_system,param.nfreq,param.ntheta); %size ndof,nfreq
-       % Parametric loop calculation
-       id = initmumps;
-       id = zmumps(id);
-       id.JOB = 1; %analysis
-       matrix_analysis = LHS{1} + LHS{2};
-       id = zmumps(id,matrix_analysis); % perform analysis
-       for ii=1:param.nfreq
-           for jj=1:param.ntheta
+        start = cputime;
+        disp('**************************');
+        disp('* Compute FE calculation *');
+        disp('**************************');
+        SOLFE = zeros(FEmatrices.size_system,param.nfreq,param.ntheta); %size ndof,nfreq
+        % Parametric loop calculation
+        id = initmumps;
+        id = zmumps(id);
+        id.JOB = 1; %analysis
+        matrix_analysis = LHS{1} + LHS{2};
+        id = zmumps(id,matrix_analysis); % perform analysis
+        for ii=1:param.nfreq
+            for jj=1:param.ntheta
                disp(['[FE] [Frequency, Theta] = [',num2str(param.freq(ii)),',',num2str(param.theta(jj)/pi*180),']']);
                Aglob = sparse(size(LHS{1},1),size(LHS{1},2));
                for kk = 1:nLHS
@@ -106,9 +111,10 @@ if flag.recalculated
                id = zmumps(id,Aglob);
                resp_P = id.SOL;
                SOLFE(:,ii,jj) = resp_P;
-           end
-       end
-       id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
+            end
+        end
+        id.JOB = -2; id = zmumps(id); %delete the instance of Mumps
+        timing(['FE_', param.study, '_', param.path1]) = cputime - start;
     end
 
 
@@ -144,7 +150,7 @@ if flag.recalculated
                                                     'f,theta';...
                                                     'f,theta,x1,x2'});
         end
-
+        
         for nvecfreq=param.vecfreqrange
             for nvectheta=param.vecthetarange
                 %%%%%
@@ -158,6 +164,7 @@ if flag.recalculated
                 %MDWCAWE Basis Julien
                 %-----------------------------------------------------------------------
                 if flag.calculateMDWCAWE
+                    start = cputime;
                     disp('****************************************');
                     disp('* Compute calculation of MDWCAWE basis *');
                     disp('****************************************');
@@ -175,12 +182,14 @@ if flag.recalculated
                             disp('**** MDWCAWE projection done ****');
                         end
                     end
+                    timing(['MDWCAWE_', param.study, '_', param.path2]) = cputime - start;
                 end
 
                 %-----------------------------------------------------------------------
                 %WCAWE Basis Romain
                 %-----------------------------------------------------------------------
                 if flag.calculateWCAWE
+                    start = cputime;
                     disp('**************************************');
                     disp('* Compute calculation of WCAWE basis *');
                     disp('**************************************');
@@ -199,6 +208,7 @@ if flag.recalculated
                             disp('**** MDWCAWE projection done ****');
                         end
                     end
+                    timing(['WCAWE_', param.study, '_', param.path2]) = cputime - start;
                 end
             end
        end
@@ -318,8 +328,6 @@ if flag.convert2VTK
     end
 end
 
-% TL = get_STL(FEmatrices,param,SOLFE);
-% plot(param.freq,TL);
 
 if flag.calculateTL
     clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;
@@ -335,7 +343,9 @@ if flag.calculateTL
         arg.type = 'load_FE';
         SOLFE = IO_data(arg,param,mesh);
         arg.type = 'calculateTL';
+        start = cputime;
         TL_FE = post_process(FEmatrices,param,arg,SOLFE);
+        timing(['FE_', param.study, '_', param.path1, '_STL']) = cputime - start;
         VALUES_SOL{1,1} = TL_FE;
         VALUES_SOL{2,1} = TL_FE;
         VALUES_name{1} = ['FE'];
@@ -351,6 +361,7 @@ if flag.calculateTL
         arg.type = 'load_MDWCAWE';
         SOLMDWCAWE = IO_data(arg,param,mesh);
         arg.type = 'calculateTL';
+        start = cputime;
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
                 TL_MDWCAWE = post_process(FEmatrices,param,arg,SOLMDWCAWE{ii,jj});
@@ -359,6 +370,7 @@ if flag.calculateTL
                 counter = counter +1;
             end
         end
+        timing(['MDWCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
     catch
         disp("SOLMDWCAWE not find for the given parameters");
         for ii=1:length(param.vecfreqrange)
@@ -372,15 +384,17 @@ if flag.calculateTL
     end
     counter = 2;
     try
+        start = cputime;
+        arg.type = 'load_WCAWE';
+        SOLWCAWE = IO_data(arg,param,mesh);
+        arg.type = 'calculateTL';
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
-                arg.type = 'load_WCAWE';
-                SOLWCAWE = IO_data(arg,param,mesh);
-                arg.type = 'calculateTL';
                 VALUES_SOL{2,counter} = post_process(FEmatrices,param,arg,SOLWCAWE{ii,jj});
                 counter = counter +1;
             end
         end
+        timing(['WCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
     catch
         disp("SOLWCAWE not find for the given parameters");
         for ii=1:length(param.vecfreqrange)
@@ -482,7 +496,12 @@ if flag.normalized_error
 end
 
 
+timing_PP(timing, param, 'save');
 
+
+if flag.show_timing
+    timing_PP(timing, param, 'display');
+end
 
 
 

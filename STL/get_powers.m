@@ -21,9 +21,9 @@ end
 
 %--------------------------------------------------------------------------
 % Calculation of P_rad
-if strcmp(param.STL.config, 'PML')
+if strcmp(param.study, 'PML')
     P_rad = PML_method(FEmatrices, param, SOL);
-elseif strcmp(param.STL.config, 'RAYLEIGH')
+elseif strcmp(param.study, 'RAYLEIGH')
     P_rad = RAYLEIGH_method(FEmatrices, param, SOL);
 end
 %--------------------------------------------------------------------------

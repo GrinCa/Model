@@ -1,6 +1,4 @@
-function [flag, param] = Modelv5_config()
-
-param.filename = 'Modelv4';
+function [flag, param] = Elasticity_config()
 
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
@@ -13,7 +11,7 @@ flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
-flag.eigen = 0;
+flag.eigen = 1;
 
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
@@ -22,8 +20,6 @@ flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
-
-flag.show_timing = 0;
 
 
 flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
@@ -48,10 +44,10 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 100;
-param.fmax = 100;
+param.fmin = 10;
+param.fmax = 10;
 param.f_range = [param.fmin param.fmax];
-param.freqincr = 5; % 20
+param.freqincr = 8; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
 param.nfreq = length(param.freq);
 
@@ -113,12 +109,8 @@ param.coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction
                                                                  param.direction_coeff(2)*x2.*sin(theta)));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
-                      "Hpmlr.txt","Hpmli.txt",...
-                      "Qpmlr.txt","Qpmli.txt",...
-                      "C1.txt","C2.txt"];
+param.matrix_names = ["K.txt","F.txt"];
                   
-param.study = 'PML';
-param.VTK.config = 'quadratic';
+param.STL.config = 'std';
 
 end

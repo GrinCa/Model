@@ -1,13 +1,14 @@
 function [flag, param] = Modelv4_config()
 
+param.filename = 'Modelv4';
+
 % Input parameters for Matlab calculation
-flag.rerun = 0; % to recalculate FreeFem++ matrices
+flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
-flag.calculateFE = 0;  % calculate FE solution, 
+flag.calculateFE = 1;  % calculate FE solution, 
 flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
 flag.calculateWCAWE = 1; % calculate WCAWE solution
-
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
@@ -16,10 +17,12 @@ flag.eigen = 0;
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
 flag.plotMQP = 0;
-flag.calculateTL = 1;
+flag.calculateTL = 0;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
+
+flag.show_timing = 0;
 
 
 flag.getmatrices = 1; % if 0, the programm won't read matrices, it is really 
@@ -36,6 +39,7 @@ end
 
 
 
+
 % Material parameters
 param.c0 = 340; %m/s
 param.rho = 1200; %kg/m3
@@ -44,7 +48,7 @@ param.rho0 = 1.29; %kg/m3
 
 % Frequency range
 param.fmin = 1;
-param.fmax = 100;
+param.fmax = 50;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
@@ -112,7 +116,8 @@ param.coeff_RHS = @(f,theta,x1,x2) P0*exp((1i*2*pi*f/param.c0).*(param.direction
 param.matrix_names = ["Kr.txt","Ki.txt","M.txt",...
                       "C.txt"];
                   
-param.STL.config = 'RAYLEIGH';
+param.study = 'RAYLEIGH';
 param.VTK.config = 'quadratic';
+
 
 end
