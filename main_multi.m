@@ -335,8 +335,8 @@ if flag.calculateTL
     arg.type = 'preload';
     FEmatrices = IO_data(arg,param,mesh);
     
-    VALUES_SOL = cell(2,2); % index 2
-    VALUES_name = cell(1,2);
+    VALUES_SOL = cell(1,3); % index 2
+    VALUES_name = cell(1,3);
     % is for MDWCAWE and WCAWE
     
     try
@@ -344,19 +344,16 @@ if flag.calculateTL
         SOLFE = IO_data(arg,param,mesh);
         arg.type = 'calculateTL';
         start = cputime;
-        TL_FE = post_process(FEmatrices,param,arg,SOLFE);
+        VALUES_SOL{1} = post_process(FEmatrices,param,arg,SOLFE);
         timing(['FE_', param.study, '_', param.path1, '_STL']) = cputime - start;
-        VALUES_SOL{1,1} = TL_FE;
-        VALUES_SOL{2,1} = TL_FE;
-        VALUES_name{1} = ['FE'];
+        VALUES_name{1} = 'FE';
     catch
         disp("SOLFE not find for the given parameters");
         TL_FE = zeros(param.nfreq,param.ntheta);
-        VALUES_SOL{1,1} = TL_FE;
-        VALUES_SOL{2,1} = TL_FE;
-        VALUES_name{1} = ['FE'];
+        VALUES_SOL{1} = TL_FE;
+        VALUES_name{1} = 'FE';
     end
-    counter = 2;
+
     try
         arg.type = 'load_MDWCAWE';
         SOLMDWCAWE = IO_data(arg,param,mesh);
@@ -364,10 +361,8 @@ if flag.calculateTL
         start = cputime;
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
-                TL_MDWCAWE = post_process(FEmatrices,param,arg,SOLMDWCAWE{ii,jj});
-                VALUES_SOL{1,counter} = TL_MDWCAWE;
-                VALUES_name{counter} = ['FPS [' num2str(param.vecfreqrange(ii)) num2str(param.vecthetarange(jj)) ']'];
-                counter = counter +1;
+                VALUES_SOL{2} = post_process(FEmatrices,param,arg,SOLMDWCAWE{ii,jj});
+                VALUES_name{2} = 'MDWCAWE';
             end
         end
         timing(['MDWCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
@@ -375,14 +370,12 @@ if flag.calculateTL
         disp("SOLMDWCAWE not find for the given parameters");
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
-            TL_MDWCAWE = zeros(param.nfreq,param.ntheta);
-            VALUES_SOL{1,counter} = TL_MDWCAWE;
-            VALUES_name{counter} = ['FPS [' num2str(param.vecfreqrange(ii)) num2str(param.vecthetarange(jj)) ']'];
-            counter = counter +1;
+            VALUES_SOL{2} = zeros(param.nfreq,param.ntheta);
+            VALUES_name{2} = 'MDWCAWE';
             end
         end
     end
-    counter = 2;
+
     try
         start = cputime;
         arg.type = 'load_WCAWE';
@@ -390,8 +383,8 @@ if flag.calculateTL
         arg.type = 'calculateTL';
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
-                VALUES_SOL{2,counter} = post_process(FEmatrices,param,arg,SOLWCAWE{ii,jj});
-                counter = counter +1;
+                VALUES_SOL{3} = post_process(FEmatrices,param,arg,SOLWCAWE{ii,jj});
+                VALUES_name{3} = 'WCAWE';
             end
         end
         timing(['WCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
@@ -399,41 +392,43 @@ if flag.calculateTL
         disp("SOLWCAWE not find for the given parameters");
         for ii=1:length(param.vecfreqrange)
             for jj=1:length(param.vecthetarange)
-                TL_WCAWE = zeros(param.nfreq,param.ntheta);
-                VALUES_SOL{2,counter} = TL_WCAWE;
-                counter = counter +1;
+                VALUES_SOL{3} = zeros(param.nfreq,param.ntheta);
+                VALUES_name{3} = 'WCAWE';
             end
         end
     end
    
-    argcomp.ylabel = 'TL';
+    argcomp.ylabel = 'TL (dB)';
     argcomp.title = 'Comparison FE MDWCAWE';
     argcomp.type = 'plotTL';
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_MDWCAWE';
-    argcomp.label = VALUES_name;
+    argcomp.label = VALUES_name(1:2);
     argcomp.external_plot.is_needed = false;
-    show_graph(argcomp,VALUES_SOL(1,:),mesh,param);
+    argcomp.path = param.path2;
+    show_graph(argcomp,VALUES_SOL(1:2),mesh,param);
     
-    argcomp.ylabel = 'TL';
+    argcomp.ylabel = 'TL (dB)';
     argcomp.title = 'Comparison FE WCAWE';
     argcomp.type = 'plotTL';
     argcomp.split = 0;
     argcomp.name_plot = 'Comparison_FE_WCAWE';
-    argcomp.label = VALUES_name;
+    argcomp.label = VALUES_name(1:2:end);
     argcomp.external_plot.is_needed = false;
-    show_graph(argcomp,VALUES_SOL(2,:),mesh,param);
+    argcomp.path = param.path2;
+    show_graph(argcomp,VALUES_SOL(1:2:end),mesh,param);
     
     argtmp.type = 'rel_error';
     argtmp.REF_SOLUTION = VALUES_SOL(1);
-    argtmp.APPROX_SOLUTION = VALUES_SOL(1,2:end);
+    argtmp.APPROX_SOLUTION = VALUES_SOL(2:end);
     argcomp.type = 'plotTL';
-    argcomp.ylabel = 'relative error';
+    argcomp.ylabel = 'Relative Error (Log_{10})';
     argcomp.title = '';
     argcomp.split = 1;
     argcomp.name_plot = 'Relative_error';
     argcomp.label = VALUES_name(2:end);
     argcomp.external_plot.is_needed = false;
+    argcomp.path = param.path2;
     show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
 end
 

@@ -13,8 +13,8 @@ if exist(['Matrices/',Filename],'dir') == 0
     mkdir(path);
 end
 
-if exist(['Matrices/',Filename,'/',path1],'dir') == 0
-    path = ['Matrices/',Filename,'/',path1];
+if exist(['Matrices/',Filename,'/',param.path1],'dir') == 0
+    path = ['Matrices/',Filename,'/',param.path1];
     mkdir(path);
 end
 
@@ -31,8 +31,8 @@ end
 
 for ii=1:length(param.vecfreqrange)
     for jj=1:length(param.vecthetarange)
-        if exist(['Matrices/',Filename,'/',path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_') ']/[',num2str(param.vecfreqrange(ii)),'_',num2str(param.vecthetarange(jj)),']'],'dir') == 0
-            path = ['Matrices/',Filename,'/',path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_') ']/[',num2str(param.vecfreqrange(ii)),'_',num2str(param.vecthetarange(jj)),']'];
+        if exist(['Matrices/',Filename,'/',param.path2],'dir') == 0
+            path = ['Matrices/',Filename,'/',param.path2];
             mkdir(path);
         end
     end

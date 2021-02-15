@@ -12,11 +12,13 @@ end
 function show2d(VALUES,param,mesh,arg)
     X = {param.freq,param.theta};
     sizesubset = [param.nfreq,param.ntheta];
-    xlabeltxt = {"freq",'theta'};
+    xlabeltxt = {'Frequency (Hz)','Angle (°)'};
     
     figure
     for ii=1:length(VALUES)
-        plot(X{find(sizesubset>1)},VALUES{ii},'DisplayName',arg.label{ii});
+        if norm(VALUES{ii}) ~= 0
+            semilogx(X{find(sizesubset>1)},VALUES{ii},'DisplayName',arg.label{ii});
+        end
         xlabel(xlabeltxt{find(sizesubset>1)});
         ylabel(arg.ylabel);
         legend;
@@ -28,6 +30,7 @@ function show2d(VALUES,param,mesh,arg)
     argtmp.gcf = gcf;
     argtmp.type = 'save_plot';
     argtmp.save_name = [arg.name_plot '_' param.interval_detail_str '.png'];
+    argtmp.path = arg.path;
     IO_data(argtmp,param,mesh);
 
 end

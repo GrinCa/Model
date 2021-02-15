@@ -33,7 +33,7 @@ if strcmp(arg.type,'preload')
 end
 
 if strcmp(arg.type,'save_plot')
-    saveas(arg.gcf,['Matrices/',mesh.file,'/',param.path1,'/[',replace(num2str(param.freqref),' ','_'),'][',replace(num2str(int16(180/pi*param.thetaref)),' ','_'),']/',arg.save_name]);
+    saveas(arg.gcf,['Matrices/',mesh.file,'/',arg.path,'/',arg.save_name]);
 end
 
 end

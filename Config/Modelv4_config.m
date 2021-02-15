@@ -8,11 +8,8 @@ flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
 flag.calculateFE = 1;  % calculate FE solution, 
 flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
-<<<<<<< HEAD
-flag.calculateWCAWE = 0; % calculate WCAWE solution
-=======
 flag.calculateWCAWE = 1; % calculate WCAWE solution
->>>>>>> 9c34f16f376d72ab767aaf97ec2c10873d6dcd9c
+
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
@@ -27,7 +24,7 @@ flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
 
 
-flag.show_timing = 0;
+flag.show_timing = 1;
 
 
 
@@ -78,7 +75,7 @@ param.ntheta = length(param.theta);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [50];
+param.freqref = [25];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
@@ -96,8 +93,8 @@ param.interval_construct = {{[1]};
 % the number of point for Padé expension. For instance, if we have 2 points
 % for expansion, and nvecfreq=5 (order of expansion), we will have 15
 % vectors in the basis, 5 by intervals.
-param.nvecfreqmin = 1;
-param.nvecfreqmax = 1;
+param.nvecfreqmin = 3;
+param.nvecfreqmax = 3;
 param.incrvecfreq = 20;
 param.vecfreqrange = param.nvecfreqmin : param.incrvecfreq : param.nvecfreqmax;
 
@@ -110,9 +107,8 @@ param.vecthetarange = param.nvecthetamin : param.incrvectheta : param.nvecthetam
 param.path1 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
                 num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']'];
 param.path2 = ['[' num2str(param.f_range(1)) '_' num2str(param.f_range(2)) ']['...
-                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']/'...
-                '[' num2str(param.nvecfreqmin) '_' num2str(param.nvecthetamin) ']['...
-                replace(num2str(param.freqref),' ','_') '][' replace(num2str(param.thetaref),' ','_') ']'];
+                num2str(int16(180*param.theta_range(1)/pi)) '_' num2str(int16(180*param.theta_range(2)/pi)) ']/['...
+                replace(num2str(param.freqref),' ','_') '][' replace(num2str(param.thetaref),' ','_') ']/[' num2str(param.nvecfreqmin) '_' num2str(param.nvecthetamin) ']'];
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 P0 = 1;
