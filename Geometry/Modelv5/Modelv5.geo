@@ -1,117 +1,124 @@
 
 
-
 plate_thickness = 0.004;
-l_ROOMfield = 0.5;
+l_ROOMfield = 0.8;
 L_PML = 0.5;
-l_plate = 0.2;
+l_plate = 0.4;
+l1 = 0.8;
 coeff = 8;
 sizemesh = 0.02;
 
-Point(1) = {l_plate, l_plate, 0, sizemesh};
+Point(1) = {l1/2, l1/2, 0, sizemesh*coeff};
 //+
-Point(2) = {-l_plate, l_plate, 0, sizemesh};
+Point(2) = {-l1/2, l1/2, 0, sizemesh*coeff};
 //+
-Point(3) = {-l_plate, -l_plate, 0, sizemesh};
+Point(3) = {-l1/2, -l1/2, 0, sizemesh*coeff};
 //+
-Point(4) = {l_plate, -l_plate, 0, sizemesh};
+Point(4) = {l1/2, -l1/2, 0, sizemesh*coeff};
 //+
-Point(5) = {l_plate, l_plate, -plate_thickness, sizemesh};
+Point(9) = {l1/2+L_PML, l1/2, 0, sizemesh*coeff};
 //+
-Point(6) = {-l_plate, l_plate, -plate_thickness, sizemesh};
+Point(10) = {-l1/2-L_PML, l1/2, 0, sizemesh*coeff};
 //+
-Point(7) = {-l_plate, -l_plate, -plate_thickness, sizemesh};
+Point(11) = {-l1/2-L_PML, -l1/2, 0, sizemesh*coeff};
 //+
-Point(8) = {l_plate, -l_plate, -plate_thickness, sizemesh};
+Point(12) = {l1/2+L_PML, -l1/2, 0, sizemesh*coeff};
 //+
-Point(9) = {l_plate+L_PML, l_plate, 0, sizemesh*coeff};
+Point(13) = {l1/2, l1/2+L_PML, 0, sizemesh*coeff};
 //+
-Point(10) = {-l_plate-L_PML, l_plate, 0, sizemesh*coeff};
+Point(14) = {-l1/2, l1/2+L_PML, 0, sizemesh*coeff};
 //+
-Point(11) = {-l_plate-L_PML, -l_plate, 0, sizemesh*coeff};
+Point(15) = {-l1/2, -l1/2-L_PML, 0, sizemesh*coeff};
 //+
-Point(12) = {l_plate+L_PML, -l_plate, 0, sizemesh*coeff};
+Point(16) = {l1/2, -l1/2-L_PML, 0, sizemesh*coeff};
 //+
-Point(13) = {l_plate, l_plate+L_PML, 0, sizemesh*coeff};
+Point(17) = {l1/2+L_PML, l1/2+L_PML, 0, sizemesh*coeff};
 //+
-Point(14) = {-l_plate, l_plate+L_PML, 0, sizemesh*coeff};
+Point(18) = {-l1/2-L_PML, l1/2+L_PML, 0, sizemesh*coeff};
 //+
-Point(15) = {-l_plate, -l_plate-L_PML, 0, sizemesh*coeff};
+Point(19) = {-l1/2-L_PML, -l1/2-L_PML, 0, sizemesh*coeff};
 //+
-Point(16) = {l_plate, -l_plate-L_PML, 0, sizemesh*coeff};
-//+
-Point(17) = {l_plate+L_PML, l_plate+L_PML, 0, sizemesh*coeff};
-//+
-Point(18) = {-l_plate-L_PML, l_plate+L_PML, 0, sizemesh*coeff};
-//+
-Point(19) = {-l_plate-L_PML, -l_plate-L_PML, 0, sizemesh*coeff};
-//+
-Point(20) = {l_plate+L_PML, -l_plate-L_PML, 0, sizemesh*coeff};
+Point(20) = {l1/2+L_PML, -l1/2-L_PML, 0, sizemesh*coeff};
 //*
-Point(21) = {l_plate+L_PML, l_plate, l_ROOMfield, sizemesh*coeff};
+Point(21) = {l1/2+L_PML, l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(22) = {-l_plate-L_PML, l_plate, l_ROOMfield, sizemesh*coeff};
+Point(22) = {-l1/2-L_PML, l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(23) = {-l_plate-L_PML, -l_plate, l_ROOMfield, sizemesh*coeff};
+Point(23) = {-l1/2-L_PML, -l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(24) = {l_plate+L_PML, -l_plate, l_ROOMfield, sizemesh*coeff};
+Point(24) = {l1/2+L_PML, -l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(25) = {l_plate, l_plate+L_PML, l_ROOMfield, sizemesh*coeff};
+Point(25) = {l1/2, l1/2+L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(26) = {-l_plate, l_plate+L_PML, l_ROOMfield, sizemesh*coeff};
+Point(26) = {-l1/2, l1/2+L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(27) = {-l_plate, -l_plate-L_PML, l_ROOMfield, sizemesh*coeff};
+Point(27) = {-l1/2, -l1/2-L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(28) = {l_plate, -l_plate-L_PML, l_ROOMfield, sizemesh*coeff};
+Point(28) = {l1/2, -l1/2-L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(29) = {l_plate+L_PML, l_plate+L_PML, l_ROOMfield, sizemesh*coeff};
+Point(29) = {l1/2+L_PML, l1/2+L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(30) = {-l_plate-L_PML, l_plate+L_PML, l_ROOMfield, sizemesh*coeff};
+Point(30) = {-l1/2-L_PML, l1/2+L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(31) = {-l_plate-L_PML, -l_plate-L_PML, l_ROOMfield, sizemesh*coeff};
+Point(31) = {-l1/2-L_PML, -l1/2-L_PML, l_ROOMfield, sizemesh*coeff};
 //+
-Point(32) = {l_plate+L_PML, -l_plate-L_PML, l_ROOMfield, sizemesh*coeff};
+Point(32) = {l1/2+L_PML, -l1/2-L_PML, l_ROOMfield, sizemesh*coeff};
 //*
-Point(33) = {l_plate+L_PML, l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(33) = {l1/2+L_PML, l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(34) = {-l_plate-L_PML, l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(34) = {-l1/2-L_PML, l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(35) = {-l_plate-L_PML, -l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(35) = {-l1/2-L_PML, -l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(36) = {l_plate+L_PML, -l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(36) = {l1/2+L_PML, -l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(37) = {l_plate, l_plate+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(37) = {l1/2, l1/2+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(38) = {-l_plate, l_plate+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(38) = {-l1/2, l1/2+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(39) = {-l_plate, -l_plate-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(39) = {-l1/2, -l1/2-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(40) = {l_plate, -l_plate-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(40) = {l1/2, -l1/2-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(41) = {l_plate+L_PML, l_plate+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(41) = {l1/2+L_PML, l1/2+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(42) = {-l_plate-L_PML, l_plate+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(42) = {-l1/2-L_PML, l1/2+L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(43) = {-l_plate-L_PML, -l_plate-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(43) = {-l1/2-L_PML, -l1/2-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(44) = {l_plate+L_PML, -l_plate-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(44) = {l1/2+L_PML, -l1/2-L_PML, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(45) = {l_plate, -l_plate, l_ROOMfield, sizemesh*coeff};
+Point(45) = {l1/2, -l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(46) = {-l_plate, -l_plate, l_ROOMfield, sizemesh*coeff};
+Point(46) = {-l1/2, -l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(47) = {-l_plate, l_plate, l_ROOMfield, sizemesh*coeff};
+Point(47) = {-l1/2, l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(48) = {l_plate, l_plate, l_ROOMfield, sizemesh*coeff};
+Point(48) = {l1/2, l1/2, l_ROOMfield, sizemesh*coeff};
 //+
-Point(49) = {l_plate, -l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(49) = {l1/2, -l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(50) = {-l_plate, -l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(50) = {-l1/2, -l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(51) = {-l_plate, l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
+Point(51) = {-l1/2, l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
 //+
-Point(52) = {l_plate, l_plate, l_ROOMfield+L_PML, sizemesh*coeff};
-
+Point(52) = {l1/2, l1/2, l_ROOMfield+L_PML, sizemesh*coeff};
+//+
+Point(53) = {l_plate/2, l_plate/2, -plate_thickness, sizemesh};
+//+
+Point(54) = {l_plate/2, -l_plate/2, -plate_thickness, sizemesh};
+//+
+Point(55) = {-l_plate/2, -l_plate/2, -plate_thickness, sizemesh};
+//+
+Point(56) = {-l_plate/2, l_plate/2, -plate_thickness, sizemesh};
+//+
+Point(57) = {l_plate/2, l_plate/2, 0, sizemesh};
+//+
+Point(58) = {l_plate/2, -l_plate/2, 0, sizemesh};
+//+
+Point(59) = {-l_plate/2, -l_plate/2, 0, sizemesh};
+//+
+Point(60) = {-l_plate/2, l_plate/2, 0, sizemesh};
 
 //+
 Line(1) = {41, 37};
@@ -135,12 +142,6 @@ Line(9) = {17, 13};
 Line(10) = {13, 25};
 //+
 Line(11) = {9, 1};
-//+
-Line(12) = {1, 5};
-//+
-Line(13) = {5, 6};
-//+
-Line(14) = {6, 2};
 //+
 Line(15) = {2, 10};
 //+
@@ -272,16 +273,6 @@ Line(78) = {49, 45};
 //+
 Line(79) = {45, 24};
 //+
-Line(80) = {4, 8};
-//+
-Line(81) = {8, 5};
-//+
-Line(82) = {8, 7};
-//+
-Line(83) = {7, 3};
-//+
-Line(84) = {7, 6};
-//+
 Line(85) = {4, 1};
 //+
 Line(86) = {4, 3};
@@ -332,14 +323,31 @@ Line(108) = {37, 52};
 //+
 Line(109) = {32, 20};
 //+
-Line Loop(1) = {82, 84, -13, -81};
+Line(115) = {57, 53};
 //+
-Plane Surface(1) = {1};
+Line(116) = {57, 60};
 //+
-Line Loop(2) = {86, -56, 19, -85};
+Line(117) = {60, 56};
 //+
-Plane Surface(2) = {2};
+Line(118) = {56, 53};
 //+
+Line(119) = {53, 54};
+//+
+Line(120) = {54, 58};
+//+
+Line(121) = {58, 59};
+//+
+Line(122) = {59, 55};
+//+
+Line(123) = {55, 54};
+//+
+Line(124) = {58, 57};
+//+
+Line(125) = {60, 59};
+//+
+Line(126) = {55, 56};
+
+
 Line(110) = {48, 25};
 //+
 Recursive Delete {
@@ -692,10 +700,6 @@ Surface Loop(11) = {4, 3, 71, 58, 44, 72};
 //+
 Volume(11) = {11};
 //+
-Surface Loop(12) = {22, 19, 3, 17, 23, 2};
-//+
-Volume(12) = {12};
-//+
 Surface Loop(13) = {20, 14, 55, 15, 19, 46};
 //+
 Volume(13) = {13};
@@ -728,41 +732,60 @@ Surface Loop(18) = {25, 56, 77, 55, 26, 76};
 //+
 Volume(18) = {18};
 //+
-Line Loop(77) = {82, 83, -86, 80};
+Line Loop(77) = {116, 117, 118, -115};
 //+
 Plane Surface(78) = {77};
 //+
-Line Loop(78) = {80, 81, -12, -85};
+Line Loop(78) = {117, -126, -122, -125};
 //+
 Plane Surface(79) = {78};
 //+
-Line Loop(79) = {13, 14, 19, 12};
+Line Loop(79) = {123, 120, 121, 122};
 //+
 Plane Surface(80) = {79};
 //+
-Line Loop(80) = {84, 14, 56, -83};
+Line Loop(80) = {119, 120, 124, 115};
 //+
 Plane Surface(81) = {80};
 //+
-Plane Surface(82) = {1};
+Line Loop(81) = {118, 119, -123, 126};
 //+
-Surface Loop(19) = {1, 2, 81, 80, 79, 78};
+Plane Surface(82) = {81};
+//+
+Line Loop(82) = {116, 125, -121, 124};
+//+
+Plane Surface(85) = {82};
+//+
+Line Loop(83) = {19, -85, 86, -56};
+//+
+Plane Surface(86) = {82, 83};
+//+
+Surface Loop(19) = {82, 78, 79, 80, 81, 85};
 //+
 Volume(19) = {19};
 //+
+Surface Loop(20) = {19, 23, 17, 22, 3, 86, 82, 78, 79, 80, 81};
+//+
+Surface Loop(21) = {23, 19, 22, 3, 17, 85, 86};
+//+
+Volume(20) = {21};
+
+
+//+
 Physical Surface("embedding",1) = {78, 81, 80, 79};
 //+
-Physical Surface("in_plate",2) = {1};
+Physical Surface("in_plate",2) = {82};
 //+
 Physical Surface("ext_plate",3) = {2};
 //+
 Physical Surface("ROOM_PML",4) = {23, 17, 22, 19, 3};
 //+
-Physical Volume("plate",5) = {19};
-//+
 Physical Volume("ROOM",6) = {12};
 //+
 Physical Volume("PML",7) = {14, 15, 16, 10, 9, 18, 7, 13, 11, 8, 17, 4, 1, 5, 3, 2, 6};
+
+
+
 
 
 
