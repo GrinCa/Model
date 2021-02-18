@@ -7,8 +7,8 @@ flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
 flag.calculateFE = 1;  % calculate FE solution, 
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
-flag.calculateWCAWE = 1; % calculate WCAWE solution
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
+flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
 flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
@@ -18,13 +18,13 @@ flag.eigen = 0;
 flag.converge = 0; % this is to post process convergence test, not to perform
                    % one
 flag.plotMQP = 0;
-flag.calculateTL = 0;
+flag.calculateTL = 1;
 flag.converge_sizemesh = 0;
 flag.compare_FE_WCAWE = 0;
 flag.normalized_error = 0;
 
 
-flag.show_timing = 1;
+flag.show_timing = 0;
 
 
 

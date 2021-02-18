@@ -11,13 +11,14 @@ load "gmsh" // for loading gmsh meshes
 
 //includes
 include "EDP/exports.idp"
-
+//include "../exports.idp"
 
 string root="Matrices/Modelv5/";
-
+//string root="../../Matrices/Modelv5/";
 
 //load the mesh from the Gmsh file
 mesh3 Th = gmshload3("Mesh/Modelv5/Modelv5.msh");
+//mesh3 Th = gmshload3("../../Mesh/Modelv5/Modelv5.msh");
 
 //region
 int plate = 5;
@@ -81,21 +82,21 @@ VhF p,v;
 //--------------------------------------------------------------------------
 
 
-real Lbg = 0.5;
+real Lbg = 0.8;
 real lpml = 0.5;
-real lplate = 0.2;
+real l1 = 0.4;
 
-real Lbg1x = lplate;
-real Lbg2x = lplate+lpml;
-real Lbg1y = lplate;
-real Lbg2y = lplate+lpml;
+real Lbg1x = l1;
+real Lbg2x = l1+lpml;
+real Lbg1y = l1;
+real Lbg2y = l1+lpml;
 real Lbg1z = Lbg;
 real Lbg2z = Lbg+lpml;
 
 real fstar = 100; //Hz
 
 real km = 2*pi*fstar/340.0;
-real sigma1 = log(2.0)/(lplate+lpml);
+real sigma1 = log(2.0)/(l1+lpml);
 real sigma2 = log(2.0)/(Lbg+lpml);
 
 cout << "\n\nkm = " << km << "\nsig1 = " << sigma1 << "\nsig2 = " << sigma2 << endl << endl;
@@ -113,16 +114,22 @@ func decay1z=(region==PML) ? 1-1i*PML1z/km : 1 ;//
 // Define varf
 //--------------------------------------------------------------------------
 
+
 //Solid
+
 varf kr([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( lambda*div(u1,u2,u3)*div(v1,v2,v3) +
 	  	            		  	    2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3) ) ) +
-				                  on(embedding, u1=0, u2=0, u3=0);
+					          on(embedding, u1=0, u2=0, u3=0);
 
 varf ki([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( eta*(lambda*div(u1,u2,u3)*div(v1,v2,v3) +
 	  	            		  	         2.0*mu*( epsilon(u1,u2,u3)'*epsilon(v1,v2,v3)) ) );
 
-
 varf m([u1,u2,u3], [v1,v2,v3]) = int3d(Th, plate)( rhoS*[u1,u2,u3]'*[v1,v2,v3] );
+
+//Coupling
+varf c1(p, v) = int2d(Th, inplate)( p*v );   // the normal vector to the surface is n = Uz
+
+varf c2(p, v) = int2d(Th, extplate)( p*v );   // the normal vector to the surface is n = Uz
 
 
 //Fluid
@@ -138,33 +145,17 @@ varf qpmli(p, v) = int3d(Th, PML, ROOM)( p*v*imag( decay1x*decay1y*decay1z ) );
 
 
 
-//Coupling
-varf c1(p, v) = int2d(Th, inplate)( p*v );   // the normal vector to the surface is n = Uz
-
-varf c2(p, v) = int2d(Th, extplate)( p*v );   // the normal vector to the surface is n = Uz
-
 //--------------------------------------------------------------------------
 // Define matrices
 //--------------------------------------------------------------------------
 
 //Solid
+
 matrix Kr = kr(VhS, VhS);
 matrix Ki = ki(VhS, VhS);
 matrix M = m(VhS, VhS);
-//Fluid
-matrix Hpmlr = hpmlr(VhF, VhF);
-matrix Hpmli = hpmli(VhF, VhF);
-matrix Qpmlr = qpmlr(VhF, VhF);
-matrix Qpmli = qpmli(VhF, VhF);
-//Coupling
 matrix C1 = c1(VhF, VhF);
 matrix C2 = c2(VhF, VhF);
-
-//--------------------------------------------------------------------------
-// Export Data
-//--------------------------------------------------------------------------
-
-
 {
 ofstream fout(root+"M.txt");
 fout<< M <<endl;
@@ -177,6 +168,22 @@ fout<< Kr <<endl;
 ofstream fout(root+"Ki.txt");
 fout<< Ki <<endl;
 }
+{
+ofstream fout(root+"C1.txt");
+fout << C1 << endl;
+}
+{
+ofstream fout(root+"C2.txt");
+fout << C2 << endl;
+}
+
+
+
+//Fluid
+matrix Hpmlr = hpmlr(VhF, VhF);
+matrix Hpmli = hpmli(VhF, VhF);
+matrix Qpmlr = qpmlr(VhF, VhF);
+matrix Qpmli = qpmli(VhF, VhF);
 {
 ofstream fout(root+"Hpmlr.txt");
 fout << Hpmlr << endl;
@@ -193,20 +200,16 @@ fout << Qpmlr << endl;
 ofstream fout(root+"Qpmli.txt");
 fout << Qpmli << endl;
 }
-{
-ofstream fout(root+"C1.txt");
-fout << C1 << endl;
-}
-{
-ofstream fout(root+"C2.txt");
-fout << C2 << endl;
-}
-
-
+//--------------------------------------------------------------------------
+// Export Data
+//--------------------------------------------------------------------------
 
 saveRegionLabels(VhF, root+"regions.txt");
 saveBoundariesLabels(VhF, boundaryLabel, root+"labels.txt");
 saveNodes(VhF,root+"Nodes.txt");
 saveConnectivity(Th, VhF, root+"connectivity_table.txt");
+
+
+
 
 

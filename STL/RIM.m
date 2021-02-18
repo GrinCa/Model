@@ -20,7 +20,7 @@ Se = abs( unit'*FEmatrices.SurfIn_matrix*unit / n_elem ); % mean area of an
 
 disp("Start Rayleigh calculation");
 
-for n=1:param.nfreq
+parfor n=1:param.nfreq
     rayleigh_matrices{n} = zeros(n_elem, n_elem);
     omega = 2*pi*param.freq(n);
     k = omega/param.c0;

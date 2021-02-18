@@ -1,5 +1,4 @@
 
-
 plate_thickness = 0.004;
 l_ROOMfield = 0.8;
 L_PML = 0.5;
@@ -245,10 +244,6 @@ Line(64) = {26, 25};
 //+
 Line(65) = {37, 38};
 //+
-Line(66) = {51, 33};
-//+
-Line(67) = {21, 47};
-//+
 Line(68) = {48, 52};
 //+
 Line(69) = {48, 1};
@@ -323,6 +318,16 @@ Line(108) = {37, 52};
 //+
 Line(109) = {32, 20};
 //+
+Line(110) = {48, 25};
+//+
+Line(111) = {21, 48};
+//+
+Line(112) = {48, 47};
+//+
+Line(113) = {33, 52};
+//+
+Line(114) = {52, 51};
+//+
 Line(115) = {57, 53};
 //+
 Line(116) = {57, 60};
@@ -346,29 +351,12 @@ Line(124) = {58, 57};
 Line(125) = {60, 59};
 //+
 Line(126) = {55, 56};
+//+
 
 
-Line(110) = {48, 25};
-//+
-Recursive Delete {
-  Line{67}; 
-}
-//+
-Line(111) = {21, 48};
-//+
-Line(112) = {48, 47};
-//+
 Line Loop(3) = {112, 58, 107, 100};
 //+
 Plane Surface(3) = {3};
-//+
-Recursive Delete {
-  Line{66}; 
-}
-//+
-Line(113) = {33, 52};
-//+
-Line(114) = {52, 51};
 //+
 Line Loop(4) = {114, -59, -106, -93};
 //+
@@ -565,8 +553,6 @@ Plane Surface(51) = {51};
 Line Loop(52) = {45, 50, 49, 34};
 //+
 Plane Surface(52) = {52};
-//+
-Plane Surface(53) = {28};
 //+
 Line Loop(53) = {38, 53, 49, -37};
 //+
@@ -776,16 +762,13 @@ Physical Surface("embedding",1) = {78, 81, 80, 79};
 //+
 Physical Surface("in_plate",2) = {82};
 //+
-Physical Surface("ext_plate",3) = {2};
+Physical Surface("ext_plate",3) = {85};
 //+
 Physical Surface("ROOM_PML",4) = {23, 17, 22, 19, 3};
 //+
-Physical Volume("ROOM",6) = {12};
+Physical Volume("plate",5) = {19};
+//+
+Physical Volume("ROOM",6) = {20};
 //+
 Physical Volume("PML",7) = {14, 15, 16, 10, 9, 18, 7, 13, 11, 8, 17, 4, 1, 5, 3, 2, 6};
-
-
-
-
-
 

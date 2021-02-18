@@ -1,6 +1,6 @@
 function [flag, param] = Modelv5_config()
 
-param.filename = 'Modelv4';
+param.filename = 'Modelv5';
 
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
@@ -11,7 +11,7 @@ flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
 
 flag.eigen = 0;
 
@@ -48,8 +48,8 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 100;
-param.fmax = 100;
+param.fmin = 300;
+param.fmax = 300;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 5; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range
@@ -66,7 +66,7 @@ param.ntheta = length(param.theta);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % those frequencies are the frequencies point for Padé expension
-param.freqref = [225];
+param.freqref = [100];
 param.nfreqref = length(param.freqref);
 
 param.thetaref = [0];
