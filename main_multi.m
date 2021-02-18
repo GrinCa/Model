@@ -252,60 +252,11 @@ end
 %show_surface(FEmatrices,param,SOLFE,FEmatrices.PlateExt,[1 2],3);
 
 if flag.converge
-    clear FEmatrices SOLFE SOLMDWCAWE;
-    sizemesh_ARRAY = load('sizemesh.txt');
-    fid1 = fopen('converge1.txt','wt');
-    fid2 = fopen('converge2.txt','wt');
-    if flag.calculateFE == 1
-        for ii=1:length(sizemesh_ARRAY)
-            sizemeshtmp = sizemesh_ARRAY(ii);    
-            SOL = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLFE_',mesh.file,'_sizemesh_',num2str(sizemesh),'.mat']));
-            SOL = SOL{1};
-        end
-    elseif flag.calculateMDWCAWE
-        for ii=1:length(sizemesh_ARRAY)
-            sizemeshtmp = sizemesh_ARRAY(ii);
-            SOL = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/SOLMDWCAWE_',mesh.file,'_nvec_',num2str(param.n_sub_range*nvecfreq),'_sizemesh_',num2str(sizemesh),'.mat']));
-            SOL = SOL{1};
-        end
-    end
-    DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.idData,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
-    FEmatrices = DATA{1};
-    param = DATA{2};
-    ndof = size(FEmatrices.Nodes,1);
-    ndof_acoustic = length(FEmatrices.indexp);
-    %ndof_acoustic = length(FEmatrices.acoustic_nodes);
-    acoustic_volume = load('acoustic_volume.txt');
-    Pressure = zeros(ndof,param.nfreq);
-    Pressure(FEmatrices.acoustic_nodes,:) = real(SOL(FEmatrices.indexp,:));
-    MQP1 = Pressure(FEmatrices.acoustic_nodes,:)'*FEmatrices.Q*Pressure(FEmatrices.acoustic_nodes,:)/((4e-10)*acoustic_volume);
-    MQP1 = 10*log10(MQP1);
-    fprintf(fid1,strcat(num2str(ndof),'\t',num2str(real(diag(MQP1)')),'\n'));
-    MQP2 = Pressure'*Pressure/4/(10e-10)/2/ndof_acoustic;
-    MQP2 = 10*log10(MQP2);
-    fprintf(fid2,strcat(num2str(ndof),'\t',num2str(real(diag(MQP2)')),'\n'));
-    fclose(fid1);
-    fclose(fid2);
+    run_converge(param);
 end
 
 if flag.plotMQP
-    fid = fopen('converge.txt','rt');
-    while true
-        line = fgets(fid);
-        if line == -1
-            break;
-        else
-            line = str2num(strtrim(line));
-            plot(param.freq,line(2:end),'DisplayName',['ndof = ' num2str(line(1))]);
-            hold on
-        end
-    end
-    
-    xlabel('Frequency (Hz)');
-    ylabel('Mean quadratic pressure (dB)');
-    legend();
-    hold off
-    fclose(fid);
+    run_MQP();
 end
 
 
@@ -313,123 +264,12 @@ end
 % convert
 %--------------------------------------------------------------------------
 if flag.convert2VTK
-    clear FEmatrices;
-    sizemesh_ARRAY = load('sizemesh.txt');
-    sizemesh = sizemesh_ARRAY(end);
-    DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/','DATA_sizemesh_',num2str(sizemesh),'.mat']));
-    FEmatrices = DATA{1};
-    param = DATA{2};
-    vtk_config = str2func([mesh.file '_vtk']);
-    param = vtk_config(FEmatrices,param);
-    if flag.calculateFE
-        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE','_sizemesh_',num2str(sizemesh),'.mat']));
-        SOLFE = SOLFE{1};      
-        convertGEO2VTK(FEmatrices,mesh,sizemesh,SOLFE,param.VTK.PARTITION,param,param.VTK.range);
-    end
+    run_convert(param, mesh, flag);
 end
 
 
 if flag.calculateTL
-    clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;
-    arg.sizemesh = sizemesh;
-    arg.type = 'preload';
-    FEmatrices = IO_data(arg,param,mesh);
-    
-    VALUES_SOL = cell(1,3); % index 2
-    VALUES_name = cell(1,3);
-    % is for MDWCAWE and WCAWE
-    
-    try
-        arg.type = 'load_FE';
-        SOLFE = IO_data(arg,param,mesh);
-        arg.type = 'calculateTL';
-        start = cputime;
-        VALUES_SOL{1} = post_process(FEmatrices,param,arg,SOLFE);
-        timing(['FE_', param.study, '_', param.path1, '_STL']) = cputime - start;
-        VALUES_name{1} = 'FE';
-    catch
-        disp("SOLFE not find for the given parameters");
-        TL_FE = zeros(param.nfreq,param.ntheta);
-        VALUES_SOL{1} = TL_FE;
-        VALUES_name{1} = 'FE';
-    end
-
-    try
-        arg.type = 'load_MDWCAWE';
-        SOLMDWCAWE = IO_data(arg,param,mesh);
-        arg.type = 'calculateTL';
-        start = cputime;
-        for ii=1:length(param.vecfreqrange)
-            for jj=1:length(param.vecthetarange)
-                VALUES_SOL{2} = post_process(FEmatrices,param,arg,SOLMDWCAWE{ii,jj});
-                VALUES_name{2} = 'MDWCAWE';
-            end
-        end
-        timing(['MDWCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
-    catch
-        disp("SOLMDWCAWE not find for the given parameters");
-        for ii=1:length(param.vecfreqrange)
-            for jj=1:length(param.vecthetarange)
-            VALUES_SOL{2} = zeros(param.nfreq,param.ntheta);
-            VALUES_name{2} = 'MDWCAWE';
-            end
-        end
-    end
-
-    try
-        start = cputime;
-        arg.type = 'load_WCAWE';
-        SOLWCAWE = IO_data(arg,param,mesh);
-        arg.type = 'calculateTL';
-        for ii=1:length(param.vecfreqrange)
-            for jj=1:length(param.vecthetarange)
-                VALUES_SOL{3} = post_process(FEmatrices,param,arg,SOLWCAWE{ii,jj});
-                VALUES_name{3} = 'WCAWE';
-            end
-        end
-        timing(['WCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
-    catch
-        disp("SOLWCAWE not find for the given parameters");
-        for ii=1:length(param.vecfreqrange)
-            for jj=1:length(param.vecthetarange)
-                VALUES_SOL{3} = zeros(param.nfreq,param.ntheta);
-                VALUES_name{3} = 'WCAWE';
-            end
-        end
-    end
-   
-    argcomp.ylabel = 'TL (dB)';
-    argcomp.title = 'Comparison FE MDWCAWE';
-    argcomp.type = 'plotTL';
-    argcomp.split = 0;
-    argcomp.name_plot = 'Comparison_FE_MDWCAWE';
-    argcomp.label = VALUES_name(1:2);
-    argcomp.external_plot.is_needed = false;
-    argcomp.path = param.path2;
-    show_graph(argcomp,VALUES_SOL(1:2),mesh,param);
-    
-    argcomp.ylabel = 'TL (dB)';
-    argcomp.title = 'Comparison FE WCAWE';
-    argcomp.type = 'plotTL';
-    argcomp.split = 0;
-    argcomp.name_plot = 'Comparison_FE_WCAWE';
-    argcomp.label = VALUES_name(1:2:end);
-    argcomp.external_plot.is_needed = false;
-    argcomp.path = param.path2;
-    show_graph(argcomp,VALUES_SOL(1:2:end),mesh,param);
-    
-    argtmp.type = 'rel_error';
-    argtmp.REF_SOLUTION = VALUES_SOL(1);
-    argtmp.APPROX_SOLUTION = VALUES_SOL(2:end);
-    argcomp.type = 'plotTL';
-    argcomp.ylabel = 'Relative Error (Log_{10})';
-    argcomp.title = '';
-    argcomp.split = 1;
-    argcomp.name_plot = 'Relative_error';
-    argcomp.label = VALUES_name(2:end);
-    argcomp.external_plot.is_needed = false;
-    argcomp.path = param.path2;
-    show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
+    timing = run_STL(param, mesh, timing, sizemesh);
 end
 
 
@@ -438,56 +278,9 @@ if flag.eigen
 end
 
 
-if flag.converge_sizemesh
-    sizemesh_file = load('sizemesh.txt');
-    meanFE = cell(length(sizemesh_file),1);
-    title_VALUES_1 = cell(length(sizemesh_file),1);
-    argcomp.label = cell(length(sizemesh_file),1);
-    for ii=1:length(sizemesh_file)
-        DATA = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/DATA_sizemesh_',num2str(sizemesh_file(ii)),'.mat']));
-        FEmatrices = DATA{1};
-        param = DATA{2};
-        SOLFE = struct2cell(load(['Matrices/',mesh.file,'/',param.path1,'/SOLFE_sizemesh_',num2str(sizemesh_file(ii)),'.mat']));
-        SOLFE = SOLFE{1};
-        meanFE{ii} = mean(real(SOLFE(FEmatrices.PlateCavity_nodes,:)),1);
-        argcomp.label{ii} = [num2str(size(FEmatrices.Nodes,1)) ' ndofs'];
-    end
-
-    argcomp.type = 'converge';
-    argcomp.xlabel = 'freq';
-    argcomp.ylabel = 'mean pressure (Pa)';
-    argcomp.title = '';
-    argcomp.name_plot = ['Convergence_FE_[' replace(num2str(sizemesh_file'),' ','_') ']'];
-    argcomp.external_plot.is_needed = false;
-    show_graph(argcomp,meanFE,mesh,param);
-end
 
 if flag.normalized_error
-    VALUES = cell(1,2);
-    arg.sizemesh = sizemesh;
-    arg.type = 'preload';
-    FEmatrices = IO_data(arg,param,mesh);
-    arg.type = 'load_FE';
-    arg.REF_SOLUTION = IO_data(arg,param,mesh);
-    arg.type = 'load_MDWCAWE';
-    arg.APPROX_SOLUTION = IO_data(arg,param,mesh);
-    arg.type = 'normalize_error';
-    VALUES{1} = log10(post_process(FEmatrices,param,arg));
-    arg.split = false;
-    arg.label = {'MDWCAWE','WCAWE'};
-    arg.zlabel = 'error';
-    arg.title = {'FE/MDWCAWE','FE/WCAWE'};
-    arg.external_plot.is_needed = false;
-    arg.name_plot = 'relative error norm';
-    %show_graph(arg,VALUES,mesh,param);
-    
-    
-    arg.type = 'load_WCAWE';
-    arg.APPROX_SOLUTION = IO_data(arg,param,mesh);
-    arg.type = 'normalize_error';
-    arg.split = true;
-    VALUES{2} = log10(post_process(FEmatrices,param,arg));
-    show_graph(arg,VALUES,mesh,param);
+    normalize_error();
 end
 
 

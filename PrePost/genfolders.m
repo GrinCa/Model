@@ -28,6 +28,15 @@ if exist(['EDP/',Filename],'dir') == 0
     mkdir(path);
 end
 
+sizemesh_ARRAY = load('sizemesh.txt');
+for ii=1:length(sizemesh_ARRAY)
+    path = ['STL/',Filename,'/Sizemesh[',num2str(sizemesh_ARRAY(ii)),']/',param.path2];
+    if exist(path,'dir') == 0
+        mkdir(path);
+    end
+end
+
+
 
 for ii=1:length(param.vecfreqrange)
     for jj=1:length(param.vecthetarange)

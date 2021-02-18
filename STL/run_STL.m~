@@ -1,0 +1,129 @@
+function timing = run_STL(param, mesh, timing, sizemesh)
+
+    clear FEmatrices SOLFE SOLWCAWE SOLMDWCAWE;
+    arg.sizemesh = sizemesh;
+    arg.type = 'preload';
+    FEmatrices = IO_data(arg,param,mesh);
+    
+    VALUES_SOL = cell(1,3); % index 2
+    VALUES_name = cell(1,3);
+    % is for MDWCAWE and WCAWE
+    exist_FE = 0;
+    exist_MDWCAWE = 0;
+    exist_WCAWE = 0;
+    
+    %----------------------------------------------------------------------
+    % Compute FE solution
+    %----------------------------------------------------------------------
+    
+    try
+        arg.type = 'load_FE';
+        SOLFE = IO_data(arg,param,mesh);
+        exist_FE = 1;
+    catch
+        disp("SOLFE not find for the given parameters");
+    end
+    if exist_FE
+        arg.type = 'calculateTL';
+        start = cputime;
+        VALUES_SOL{1} = post_process(FEmatrices,param,arg,SOLFE);
+        timing(['FE_', param.study, '_', param.path1, '_STL']) = cputime - start;
+        VALUES_name{1} = 'FE';
+        FE_STL = VALUES_SOL{1};
+        save(['STL/',mesh.file,'/Sizemesh[',sizemesh,']/',param.path1,'/FE_SOL.mat'],'FE_STL');
+    else
+        VALUES_SOL{1} = zeros(param.nfreq,param.ntheta);
+        VALUES_name{1} = 'FE';
+    end
+    
+    %----------------------------------------------------------------------
+    % Compute MDWCAWE solution
+    %----------------------------------------------------------------------
+
+    try
+        arg.type = 'load_MDWCAWE';
+        SOLMDWCAWE = IO_data(arg,param,mesh);
+        exist_MDWCAWE = 1;
+    catch
+        disp("SOLMDWCAWE not find for the given parameters");
+    end
+    if exist_MDWCAWE
+        arg.type = 'calculateTL';
+        start = cputime;
+        VALUES_SOL{2} = post_process(FEmatrices,param,arg,SOLMDWCAWE{ii,jj});
+        VALUES_name{2} = 'MDWCAWE';
+        timing(['MDWCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
+        MDWCAWE_STL = VALUES_SOL{2};
+        save(['STL/',mesh.file,'/Sizemesh[',sizemesh,']/',param.path2,'/FE_MDWCAWE.mat'],'MDWCAWE_STL');
+    else
+        VALUES_SOL{2} = zeros(param.nfreq,param.ntheta);
+        VALUES_name{2} = 'MDWCAWE';
+    end
+    
+    %----------------------------------------------------------------------
+    % Compute MDWCAWE solution
+    %----------------------------------------------------------------------    
+    
+    try
+        arg.type = 'load_WCAWE';
+        SOLWCAWE = IO_data(arg,param,mesh);
+        exist_WCAWE = 1;
+    catch
+        disp("SOLWCAWE not find for the given parameters");
+    end
+    
+    if exist_WCAWE
+        start = cputime;
+        arg.type = 'calculateTL';
+        for ii=1:length(param.vecfreqrange)
+            for jj=1:length(param.vecthetarange)
+                VALUES_SOL{3} = post_process(FEmatrices,param,arg,SOLWCAWE{ii,jj});
+                VALUES_name{3} = 'WCAWE';
+            end
+        end
+        timing(['WCAWE_', param.study, '_', param.path2, '_STL']) = cputime - start;
+        WCAWE_STL = VALUES_SOL{3};
+        save(['STL/',mesh.file,'/Sizemesh[',sizemesh,']/',param.path2,'/FE_WCAWE.mat'],'WCAWE_STL');
+    else
+        for ii=1:length(param.vecfreqrange)
+            for jj=1:length(param.vecthetarange)
+                VALUES_SOL{3} = zeros(param.nfreq,param.ntheta);
+                VALUES_name{3} = 'WCAWE';
+            end
+        end
+    end
+   
+    argcomp.ylabel = 'TL (dB)';
+    argcomp.title = 'Comparison FE MDWCAWE';
+    argcomp.type = 'plotTL';
+    argcomp.split = 0;
+    argcomp.name_plot = 'Comparison_FE_MDWCAWE';
+    argcomp.label = VALUES_name(1:2);
+    argcomp.external_plot.is_needed = false;
+    argcomp.path = param.path2;
+    show_graph(argcomp,VALUES_SOL(1:2),mesh,param);
+    
+    argcomp.ylabel = 'TL (dB)';
+    argcomp.title = 'Comparison FE WCAWE';
+    argcomp.type = 'plotTL';
+    argcomp.split = 0;
+    argcomp.name_plot = 'Comparison_FE_WCAWE';
+    argcomp.label = VALUES_name(1:2:end);
+    argcomp.external_plot.is_needed = false;
+    argcomp.path = param.path2;
+    show_graph(argcomp,VALUES_SOL(1:2:end),mesh,param);
+    
+    argtmp.type = 'rel_error';
+    argtmp.REF_SOLUTION = VALUES_SOL(1);
+    argtmp.APPROX_SOLUTION = VALUES_SOL(2:end);
+    argcomp.type = 'plotTL';
+    argcomp.ylabel = 'Relative Error (Log_{10})';
+    argcomp.title = '';
+    argcomp.split = 1;
+    argcomp.name_plot = 'Relative_error';
+    argcomp.label = VALUES_name(2:end);
+    argcomp.external_plot.is_needed = false;
+    argcomp.path = param.path2;
+    show_graph(argcomp,post_process(FEmatrices,param,argtmp),mesh,param);
+
+end
