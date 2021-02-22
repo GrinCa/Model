@@ -48,8 +48,8 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 300;
-param.fmax = 300;
+param.fmin = 50;
+param.fmax = 50;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 5; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range

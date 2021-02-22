@@ -7,11 +7,11 @@ flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
                        % next three flags won't be considered.
 flag.calculateFE = 1;  % calculate FE solution, 
-flag.calculateMDWCAWE = 1; % calculate MDWCAWE solution
-flag.calculateWCAWE = 1; % calculate WCAWE solution
+flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
+flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
 flag.eigen = 0;
 
@@ -57,8 +57,8 @@ param.rho0 = 1.29; %kg/m3
 %%%%% Background pressure field %%%%%
 
 % Frequency range
-param.fmin = 1;
-param.fmax = 50;
+param.fmin = 150;
+param.fmax = 150;
 param.f_range = [param.fmin param.fmax];
 param.freqincr = 2; % 20
 param.freq = param.fmin : param.freqincr : param.fmax; % frequency range

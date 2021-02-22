@@ -82,9 +82,9 @@ VhF p,v;
 //--------------------------------------------------------------------------
 
 
-real Lbg = 0.8;
+real Lbg = 1.5;
 real lpml = 0.5;
-real l1 = 0.4;
+real l1 = 1;
 
 real Lbg1x = l1;
 real Lbg2x = l1+lpml;
@@ -93,11 +93,11 @@ real Lbg2y = l1+lpml;
 real Lbg1z = Lbg;
 real Lbg2z = Lbg+lpml;
 
-real fstar = 100; //Hz
+real fstar = 400; //Hz
 
 real km = 2*pi*fstar/340.0;
-real sigma1 = log(2.0)/(l1+lpml);
-real sigma2 = log(2.0)/(Lbg+lpml);
+real sigma1 = log(1e3)/(l1+lpml);
+real sigma2 = log(1e3)/(Lbg+lpml);
 
 cout << "\n\nkm = " << km << "\nsig1 = " << sigma1 << "\nsig2 = " << sigma2 << endl << endl;
 
@@ -153,7 +153,7 @@ varf qpmli(p, v) = int3d(Th, PML, ROOM)( p*v*imag( decay1x*decay1y*decay1z ) );
 
 matrix Kr = kr(VhS, VhS);
 matrix Ki = ki(VhS, VhS);
-matrix M = m(VhS, VhS);
+matrix M  = m(VhS, VhS);
 matrix C1 = c1(VhF, VhF);
 matrix C2 = c2(VhF, VhF);
 {

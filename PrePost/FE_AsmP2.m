@@ -38,7 +38,7 @@ for n=1:size(element_data,1)
 end
 
 RHS(FEmatrices.indexPlateIn) = RHS_tmp(find(RHS_tmp));
-
+       
 end
 
 function [element_data, element_center, plan2D, normal_direction] = get_element_surface(FEmatrices, param)

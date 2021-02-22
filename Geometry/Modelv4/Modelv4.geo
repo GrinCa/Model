@@ -3,7 +3,7 @@ SetFactory("OpenCASCADE");
 
 plate_thickness=0.004;
 L=0.4;
-sizemesh = 0.04;
+sizemesh = 0.01;
 
 Point(1) = {-L/2, -L/2, 0, sizemesh};
 //+
