@@ -1,8 +1,16 @@
 *****************************************************************************************
+#################################       RUN           ###################################
+*****************************************************************************************
+To setup a case, edit its file in the Config folder or create it on the base of existing 
+ones. The study should be launched with the file launch.m. All post-process are made after 
+the calculation. When putting some flag to 1, it will disable the calculation, both are 
+done separetaly.
+
+
+*****************************************************************************************
 #################################       USEFUL        ###################################
 *****************************************************************************************
-In case you only want the source code, please go to https://github.com/GrinCa/Univariate 
-and clone the repository with git:
+Clone the repository with git:
 
 git clone https://github.com/GrinCa/Model_scattering
 
