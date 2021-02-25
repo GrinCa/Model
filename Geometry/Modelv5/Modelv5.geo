@@ -1,10 +1,11 @@
-plate_thickness = 0.004;
-l_ROOMfield = 1.5;
-L_PML = 0.5;
-l_plate = 0.4;
-l1 = 2;
-coeff = 8;
+plate_thickness = 0.004000;
+l_ROOMfield = 1.500000;
+L_PML = 0.500000;
+l_plate = 0.400000;
+l1 = 2.000000;
+coeff = 8.000000;
 sizemesh = 0.02;
+
 
 Point(1) = {l1/2, l1/2, 0, sizemesh*coeff};
 //+

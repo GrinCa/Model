@@ -38,6 +38,8 @@ addpath(genpath(strcat(pwd,'/',PrePost)));
 
 mesh.file = 'Modelv5';
 
+config = str2func([mesh.file '_config']);
+[~, param] = config();
 
 
 remesh = 1;
@@ -51,7 +53,7 @@ if remesh
 % NOTE : If the size of elastic and acoustic is different, the mesh
 % elements won't be regular, which implies that the mean quadratic pressure
 % is no longer a good indicator.
-sizemesh = [0.02];
+sizemesh = [0.04];
 file_sizemesh = fopen('sizemesh.txt','wt');
 
 n_mesh = length(sizemesh(1,:));
@@ -68,31 +70,13 @@ fclose(fid);
 dataMesh = char(dataMesh.');
 
 for kk=1:n_mesh
-    for ii=1:n_key
-        % Find starting and end indexes of substring to replace
-        startindkey = strfind(dataMesh,keywords{ii});
-        endlocate = strfind(dataMesh,';');
-        endlocate_idx = find((endlocate-startindkey)>0);
-        endind = endlocate(endlocate_idx(1));
-        startindval = startindkey+length(keywords{ii});
-        % Test if value is to be updated, update if so
-        current_val = str2double(dataMesh(startindval:endind-1));
-
-        if current_val ~= sizemesh(ii,kk)
-            dataMesh = strrep(dataMesh, dataMesh(startindkey:endind), [keywords{ii}, num2str(sizemesh(ii,kk)),';']);
-            fid = fopen([path,mesh.file, '.geo'],'wt');
-            fwrite(fid,dataMesh);
-            fclose (fid);
-        end
-    end
+    update_files(param,mesh);
     %save sizemesh to acces in the main_multi.m file.
     fprintf(file_sizemesh,[num2str(sizemesh(1,kk)),'\n']);
-    
     path_soft = getpath();
-    
     % compile .geo file
     disp('Compile .geo file...');
-    command = [path_soft.gmsh,' -3 ',path,mesh.file,'.geo ','-o ',path,mesh.file,'.msh'];
+    command = [path_soft.gmsh,' -3 ',path,mesh.file,'.geo ','-o ',path,mesh.file,'.msh',' -format msh2'];
     % version gmsh : 3.0.6, whiwh match with FreeFem++ 4.1. Antother
     % version could not work
     system(command);

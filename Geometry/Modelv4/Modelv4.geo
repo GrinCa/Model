@@ -1,9 +1,10 @@
 // Gmsh project created on Sun Nov 29 10:54:50 2020
 SetFactory("OpenCASCADE");
 
-plate_thickness=0.004;
-L=0.4;
+plate_thickness = 0.004;
+L = 0.4;
 sizemesh = 0.01;
+
 
 Point(1) = {-L/2, -L/2, 0, sizemesh};
 //+

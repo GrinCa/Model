@@ -20,25 +20,20 @@ string root="Matrices/Modelv5/";
 mesh3 Th = gmshload3("Mesh/Modelv5/Modelv5.msh");
 //mesh3 Th = gmshload3("../../Mesh/Modelv5/Modelv5.msh");
 
-//region
-int plate = 5;
-int ROOM = 6;
-int PML = 7;
 //label
 int embedding = 1;
 int inplate = 2;
 int extplate = 3;
 int ROOMPML = 4;
-
-
-
+//region
+int plate = 5;
+int ROOM = 6;
+int PML = 7;
 //boundary label
 int[int] boundaryLabel(3);
 boundaryLabel(0) = inplate;
 boundaryLabel(1) = extplate;
 boundaryLabel(2) = ROOMPML;
-
-
 
 //--------------------------------------------------------------------------
 // Define variables, functions, and macros
@@ -82,24 +77,24 @@ VhF p,v;
 //--------------------------------------------------------------------------
 
 
-real Lbg = 1.5;
-real lpml = 0.5;
-real l1 = 1;
+real l1 = 1.000000;
+real lbg = 1.500000;
+real lpml = 0.500000;
 
 real Lbg1x = l1;
 real Lbg2x = l1+lpml;
 real Lbg1y = l1;
 real Lbg2y = l1+lpml;
-real Lbg1z = Lbg;
-real Lbg2z = Lbg+lpml;
+real Lbg1z = lbg;
+real Lbg2z = lbg+lpml;
 
 real fstar = 400; //Hz
 
 real km = 2*pi*fstar/340.0;
 real sigma1 = log(1e3)/(l1+lpml);
-real sigma2 = log(1e3)/(Lbg+lpml);
+real sigma2 = log(1e3)/(lbg+lpml);
 
-cout << "\n\nkm = " << km << "\nsig1 = " << sigma1 << "\nsig2 = " << sigma2 << endl << endl;
+cout << "km = " << km << "sig1 = " << sigma1 << "sig2 = " << sigma2 << endl << endl;
 
 func PML1x=sigma1/(Lbg2x-abs(x)) ;
 func decay1x=(region==PML) ? 1-1i*PML1x/km : 1 ;//

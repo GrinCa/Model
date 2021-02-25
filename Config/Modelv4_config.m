@@ -2,6 +2,16 @@ function [flag, param] = Modelv4_config()
 
 param.filename = 'Modelv4';
 
+% definition of the parameters
+
+param.EDP.keywords = {};
+
+param.GEO.keywords = {'L = %f', 0.4;...
+                      'plate_thickness = %f', 0.004};
+
+
+
+
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the

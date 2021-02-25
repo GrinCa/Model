@@ -2,6 +2,22 @@ function [flag, param] = Modelv5_config()
 
 param.filename = 'Modelv5';
 
+% definition of the parameters
+l1 = 2.0;
+L_PML = 0.5;
+L_BG = 1.5;
+
+param.EDP.keywords = {'real lbg = %f;\n',  L_BG;...
+                      'real lpml = %f;\n', L_PML;...
+                      'real l1 = %f;\n',   l1/2};
+
+param.GEO.keywords = {'l_ROOMfield = %f;\n',L_BG;...
+                      'L_PML = %f;\n',L_PML;...
+                      'l1 = %f;\n',l1;...
+                      'plate_thickness = %f;\n',0.004;...
+                      'l_plate = %f;\n',0.4;...
+                      'coeff = %f;\n',8};
+
 % Input parameters for Matlab calculation
 flag.rerun = 1; % to recalculate FreeFem++ matrices
 flag.recalculated = 1; % allow WCAWE and/or FE recalculation. if 0 then the
@@ -11,7 +27,7 @@ flag.calculateMDWCAWE = 0; % calculate MDWCAWE solution
 flag.calculateWCAWE = 0; % calculate WCAWE solution
 
 
-flag.convert2VTK = 1; % convert SOLFE.mat into a .vkt file
+flag.convert2VTK = 0; % convert SOLFE.mat into a .vkt file
 
 flag.eigen = 0;
 
